@@ -1,0 +1,63 @@
+import KpiCard from "@/components/KpiCard";
+import TrendSpark from "@/components/TrendSpark";
+import { prisma } from "@/lib/prisma";
+import { cookies } from "next/headers";
+import { assertModuleEnabled } from "@/lib/moduleGuard";
+
+export default async function DashboardPage() {
+  const { allowed } = await assertModuleEnabled("dashboard");
+  if (!allowed) {
+    return (
+      <div className="space-y-3">
+        <div className="text-xl font-semibold">Erişim engellendi</div>
+        <div className="text-sm text-neutral-500">Bu modül mevcut tenant için kapalı.</div>
+      </div>
+    );
+  }
+  const cookieStore = await cookies();
+  const tenantId = cookieStore.get("tenant-id")?.value || null;
+
+  const whereTenant = tenantId ? { tenantId } : {};
+
+  const [policyCount, pendingOfferCount, collectionSum] = await Promise.all([
+    prisma.policy.count({ where: whereTenant as any }),
+    prisma.offer.count({ where: { ...(whereTenant as any), status: "Beklemede" } }),
+    prisma.collection.aggregate({ where: whereTenant as any, _sum: { amount: true } }),
+  ]);
+
+  const totalCollections = collectionSum._sum.amount || 0;
+  const tenantName = tenantId
+    ? (await prisma.tenant.findUnique({ where: { id: tenantId }, select: { name: true } }))?.name || "—"
+    : "—";
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-semibold">Dashboard</h1>
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <KpiCard title="Toplam Poliçe" value={String(policyCount)} hint="toplam" trend="flat" />
+        <KpiCard title="Bekleyen Teklif" value={String(pendingOfferCount)} hint="durum: Beklemede" trend="flat" />
+        <KpiCard title="Toplam Tahsilat" value={`₺${totalCollections.toLocaleString("tr-TR")}`} hint="toplam" trend="flat" />
+        <KpiCard title="Aktif Tenant" value={tenantName} hint={tenantId ? tenantId.slice(0, 6) + "…" : "—"} trend="flat" />
+      </div>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        <div className="xl:col-span-2 rounded border p-4">
+          <div className="font-medium mb-2 flex items-center justify-between">
+            <span>Günlük Üretim</span>
+            <TrendSpark />
+          </div>
+          <div className="h-56 grid place-items-center text-neutral-400">Büyük grafik alanı (placeholder)</div>
+        </div>
+        <div className="rounded border p-4 h-64">
+          <div className="font-medium mb-2">Bildirimler</div>
+          <ul className="text-sm list-disc pl-5 space-y-1">
+            <li>Poliçe sayısı güncel: {policyCount}</li>
+            <li>Bekleyen teklif: {pendingOfferCount}</li>
+            <li>Tahsilat toplamı: ₺{totalCollections.toLocaleString("tr-TR")}</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+

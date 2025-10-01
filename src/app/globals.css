@@ -1,0 +1,249 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Modern UI Components */
+.modern-card {
+  background-color: white;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e5e5;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  transition: all 0.2s;
+}
+
+.dark .modern-card {
+  background-color: #171717;
+  border-color: #404040;
+}
+
+.modern-card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.modern-card-gradient {
+  background: linear-gradient(to bottom right, #eff6ff, #e0e7ff);
+  border-radius: 0.75rem;
+  border: 1px solid #bfdbfe;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  transition: all 0.3s;
+}
+
+.dark .modern-card-gradient {
+  background: linear-gradient(to bottom right, #262626, #171717);
+  border-color: #404040;
+}
+
+.modern-card-gradient:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.modern-button {
+  background: linear-gradient(to right, #2563eb, #4f46e5);
+  color: white;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  transition: all 0.2s;
+  border: none;
+  cursor: pointer;
+}
+
+.modern-button:hover {
+  background: linear-gradient(to right, #1d4ed8, #4338ca);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.modern-button-secondary {
+  background-color: white;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.dark .modern-button-secondary {
+  background-color: #262626;
+  border-color: #4b5563;
+  color: #d1d5db;
+}
+
+.modern-button-secondary:hover {
+  background-color: #f9fafb;
+}
+
+.dark .modern-button-secondary:hover {
+  background-color: #374151;
+}
+
+.modern-input {
+  width: 100%;
+  border-radius: 0.5rem;
+  border: 1px solid #d1d5db;
+  background-color: white;
+  padding: 0.5rem 0.75rem;
+  color: #111827;
+  transition: all 0.2s;
+}
+
+.dark .modern-input {
+  background-color: #262626;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+.modern-input:focus {
+  border-color: #3b82f6;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.modern-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  color: #000000;
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: 0.025em;
+  transition: all 0.2s;
+  text-decoration: none;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.dark .modern-nav-link {
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: 0.025em;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modern-nav-link:hover {
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  color: #1e40af;
+  font-weight: 800;
+  transform: translateX(2px);
+  box-shadow: 0 4px 8px rgba(30, 64, 175, 0.2);
+  border: 1px solid #3b82f6;
+}
+
+.dark .modern-nav-link:hover {
+  background: linear-gradient(135deg, #1e3a8a, #312e81);
+  color: #60a5fa;
+  font-weight: 800;
+  transform: translateX(2px);
+  box-shadow: 0 4px 8px rgba(96, 165, 250, 0.3);
+  border: 1px solid #60a5fa;
+}
+
+.modern-nav-link.active {
+  background: linear-gradient(135deg, #1e40af, #3b82f6);
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 1rem;
+  letter-spacing: 0.05em;
+  box-shadow: 0 4px 12px rgba(30, 64, 175, 0.3);
+  border: 2px solid #1e40af;
+  transform: translateX(4px);
+}
+
+.dark .modern-nav-link.active {
+  background: linear-gradient(135deg, #1e40af, #3b82f6);
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 1rem;
+  letter-spacing: 0.05em;
+  box-shadow: 0 4px 12px rgba(30, 64, 175, 0.4);
+  border: 2px solid #3b82f6;
+  transform: translateX(4px);
+}
+
+.module-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: currentColor;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+  transition: all 0.2s;
+}
+
+.modern-nav-link:hover .module-icon {
+  transform: scale(1.1);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.modern-nav-link.active .module-icon {
+  transform: scale(1.15);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+}
+
+.stat-card {
+  background: linear-gradient(to bottom right, #eff6ff, #e0e7ff);
+  border-radius: 0.75rem;
+  border: 1px solid #bfdbfe;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  transition: all 0.3s;
+  padding: 1.5rem;
+}
+
+.dark .stat-card {
+  background: linear-gradient(to bottom right, #262626, #171717);
+  border-color: #404040;
+}
+
+.stat-card:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.stat-number {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #2563eb;
+}
+
+.dark .stat-number {
+  color: #60a5fa;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+.dark .stat-label {
+  color: #9ca3af;
+}

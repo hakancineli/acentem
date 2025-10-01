@@ -1,0 +1,404 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id        String   @id @default(cuid())
+  name      String
+  users     User[]
+  policies  Policy[]
+  offers    Offer[]
+  collects  Collection[]
+  modules   ModuleSetting[]
+  // Turizm modülleri
+  hotels    Hotel[]
+  hotelReservations HotelReservation[]
+  tours     Tour[]
+  tourBookings TourBooking[]
+  transfers Transfer[]
+  transferBookings TransferBooking[]
+  flights   Flight[]
+  flightBookings FlightBooking[]
+  healthInsurances HealthInsurance[]
+  healthPolicies HealthPolicy[]
+  // Muhasebe modülü
+  transactions Transaction[]
+  // Araç kiralama modülü
+  vehicles  Vehicle[]
+  vehicleRentals VehicleRental[]
+  vehicleBookings VehicleBooking[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  role      Role
+  tenantId  String?
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+enum Role {
+  SUPER
+  ADMIN
+  AGENT
+}
+
+model ModuleSetting {
+  id       String    @id @default(cuid())
+  tenantId String
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  key      ModuleKey
+  enabled  Boolean   @default(true)
+
+  @@unique([tenantId, key], name: "tenantId_key")
+}
+
+enum ModuleKey {
+  dashboard
+  policies
+  offers
+  collections
+  reports
+  users
+  arac
+}
+
+model Policy {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  number    String
+  holder    String
+  premium   Int
+  createdAt DateTime @default(now())
+}
+
+model Offer {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  title     String
+  amount    Int
+  status    String
+  createdAt DateTime @default(now())
+}
+
+model Collection {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  amount    Int
+  note      String?
+  createdAt DateTime @default(now())
+}
+
+// Otel Modülü
+model Hotel {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  name        String
+  location    String
+  city        String
+  country     String
+  stars       Int
+  description String?
+  amenities   String?  // JSON array of amenities
+  images      String?  // JSON array of image URLs
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  reservations HotelReservation[]
+}
+
+model HotelReservation {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  hotelId     String
+  hotel       Hotel    @relation(fields: [hotelId], references: [id])
+  customerName String
+  customerPhone String
+  customerEmail String?
+  checkIn     DateTime
+  checkOut    DateTime
+  nights      Int
+  rooms       Int
+  adults      Int
+  children    Int
+  totalAmount Int
+  status      String   @default("pending") // pending, confirmed, cancelled, completed
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Tur Modülü
+model Tour {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  name        String
+  destination String
+  duration    Int      // gün sayısı
+  price       Int      // fiyat (kuruş cinsinden)
+  description String?
+  itinerary   String?  // güzergah detayları
+  includes    String?  // dahil olanlar
+  excludes    String?  // dahil olmayanlar
+  images      String?  // JSON array of image URLs
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  bookings   TourBooking[]
+}
+
+model TourBooking {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  tourId      String
+  tour        Tour     @relation(fields: [tourId], references: [id])
+  customerName String
+  customerPhone String
+  customerEmail String?
+  startDate   DateTime
+  participants Int
+  totalAmount Int
+  status      String   @default("pending") // pending, confirmed, cancelled, completed
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Transfer Modülü
+model Transfer {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  name        String
+  type        String   // airport, city, intercity
+  from        String   // kalkış noktası
+  to          String   // varış noktası
+  distance    Int?     // mesafe (km)
+  duration    Int?     // süre (dakika)
+  price       Int      // fiyat (kuruş cinsinden)
+  vehicleType String   // araç tipi
+  capacity    Int      // kapasite
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  bookings   TransferBooking[]
+}
+
+model TransferBooking {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  transferId  String
+  transfer    Transfer @relation(fields: [transferId], references: [id])
+  customerName String
+  customerPhone String
+  customerEmail String?
+  pickupDate  DateTime
+  pickupTime  String
+  pickupLocation String
+  dropoffLocation String
+  passengers  Int
+  totalAmount Int
+  status      String   @default("pending") // pending, confirmed, cancelled, completed
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Uçak Modülü
+model Flight {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  airline     String   // havayolu
+  flightNumber String  // uçuş numarası
+  from        String   // kalkış şehri
+  to          String   // varış şehri
+  departure   DateTime // kalkış tarihi
+  arrival     DateTime // varış tarihi
+  price       Int      // fiyat (kuruş cinsinden)
+  class       String   // sınıf (economy, business, first)
+  seats       Int      // koltuk sayısı
+  availableSeats Int   // müsait koltuk sayısı
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  bookings   FlightBooking[]
+}
+
+model FlightBooking {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  flightId    String
+  flight      Flight   @relation(fields: [flightId], references: [id])
+  customerName String
+  customerPhone String
+  customerEmail String?
+  passengers  Int
+  totalAmount Int
+  status      String   @default("pending") // pending, confirmed, cancelled, completed
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Sağlık Modülü
+model HealthInsurance {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  name        String
+  provider    String   // sigorta sağlayıcısı
+  type        String   // tip (seyahat, sağlık, kaza)
+  coverage    String   // kapsam
+  price       Int      // fiyat (kuruş cinsinden)
+  duration    Int      // süre (gün)
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  policies   HealthPolicy[]
+}
+
+model HealthPolicy {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  insuranceId String
+  insurance   HealthInsurance @relation(fields: [insuranceId], references: [id])
+  customerName String
+  customerPhone String
+  customerEmail String?
+  startDate   DateTime
+  endDate     DateTime
+  totalAmount Int
+  status      String   @default("active") // active, expired, cancelled
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Muhasebe Modülü
+model Transaction {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  type        String   // income, expense
+  category    String   // otel, tur, transfer, ucak, saglik, araç, diger
+  amount      Int
+  description String
+  source      String   // müşteri, tedarikçi, banka vb.
+  reference   String?  // fatura no, rezervasyon no vb.
+  date        DateTime
+  status      String   @default("pending") // pending, completed, cancelled
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Araç Kiralama Modülü
+model Vehicle {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  brand       String   // marka (Toyota, Ford, BMW vb.)
+  model       String   // model (Corolla, Focus, X3 vb.)
+  year        Int      // yıl
+  type        String   // tip (sedan, hatchback, SUV, van vb.)
+  fuel        String   // yakıt türü (benzin, dizel, hybrid, elektrik)
+  transmission String  // vites (manuel, otomatik)
+  seats       Int      // koltuk sayısı
+  doors       Int      // kapı sayısı
+  engine      String   // motor hacmi
+  color       String   // renk
+  plate       String   // plaka
+  vin         String?  // şasi numarası
+  status      String   @default("available") // available, rented, maintenance, out_of_service
+  dailyRate   Int      // günlük kiralama ücreti (kuruş cinsinden)
+  weeklyRate  Int?     // haftalık kiralama ücreti
+  monthlyRate Int?     // aylık kiralama ücreti
+  deposit     Int?     // depozito miktarı
+  location    String   // araç konumu
+  description String?  // açıklama
+  features    String?  // özellikler (klima, navigasyon, bluetooth vb.)
+  images      String?  // araç fotoğrafları (JSON array)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  rentals    VehicleRental[]
+  bookings   VehicleBooking[]
+}
+
+model VehicleRental {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  vehicleId   String
+  vehicle     Vehicle  @relation(fields: [vehicleId], references: [id])
+  customerName String  // müşteri adı
+  customerPhone String // müşteri telefonu
+  customerEmail String? // müşteri emaili
+  customerId  String?  // müşteri ID (varsa)
+  startDate   DateTime // kiralama başlangıç tarihi
+  endDate     DateTime // kiralama bitiş tarihi
+  days        Int      // kiralama gün sayısı
+  dailyRate   Int      // günlük ücret
+  totalAmount Int      // toplam tutar
+  deposit     Int?     // depozito
+  status      String   @default("active") // active, completed, cancelled, overdue
+  notes       String?  // notlar
+  pickupLocation String? // teslim yeri
+  returnLocation String? // iade yeri
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model VehicleBooking {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  vehicleId   String
+  vehicle     Vehicle  @relation(fields: [vehicleId], references: [id])
+  customerName String  // müşteri adı
+  customerPhone String // müşteri telefonu
+  customerEmail String? // müşteri emaili
+  startDate   DateTime // rezervasyon başlangıç tarihi
+  endDate     DateTime // rezervasyon bitiş tarihi
+  days        Int      // rezervasyon gün sayısı
+  dailyRate   Int      // günlük ücret
+  totalAmount Int    // toplam tutar
+  status      String   @default("pending") // pending, confirmed, cancelled, completed
+  notes       String?  // notlar
+  pickupLocation String? // teslim yeri
+  returnLocation String? // iade yeri
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
