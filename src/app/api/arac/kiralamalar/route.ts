@@ -74,7 +74,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Tenant bulunamadı" }, { status: 400 });
     }
 
-    const body = await request.json();
+    // Hem JSON hem form submit desteği
+    const contentType = request.headers.get("content-type") || "";
+    let body: any;
+    if (contentType.includes("application/json")) {
+      body = await request.json();
+    } else {
+      const form = await request.formData();
+      body = Object.fromEntries(form.entries());
+    }
     const {
       vehicleId,
       customerName,
@@ -112,10 +120,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Araç müsait değil" }, { status: 400 });
     }
 
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    const toTLInt = (val: any, required = false) => {
+      if (val === undefined || val === null) return required ? NaN : null;
+      const s = String(val).replace(/[^0-9]/g, "");
+      if (s === "") return required ? NaN : null;
+      return parseInt(s, 10);
+    };
+
+    const start = new Date(String(startDate));
+    const end = new Date(String(endDate));
     const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    const totalAmount = days * parseInt(dailyRate);
+    const dailyRateInt = toTLInt(dailyRate, true);
+    if (Number.isNaN(dailyRateInt)) {
+      return NextResponse.json({ error: "Geçersiz günlük ücret" }, { status: 400 });
+    }
+    const depositInt = toTLInt(deposit, false);
+
+    const totalAmount = days * dailyRateInt;
 
     const rental = await prisma.vehicleRental.create({
       data: {
@@ -128,9 +149,9 @@ export async function POST(request: NextRequest) {
         startDate: start,
         endDate: end,
         days,
-        dailyRate: parseInt(dailyRate),
+        dailyRate: dailyRateInt,
         totalAmount,
-        deposit: deposit ? parseInt(deposit) : null,
+        deposit: depositInt,
         status,
         notes,
         pickupLocation,

@@ -30,134 +30,73 @@ export default async function MuhasebePage() {
   const cookieStore = await cookies();
   const tenantId = cookieStore.get("tenant-id")?.value;
 
-  // Muhasebe istatistikleri - tüm modüllerden toplam
+  // Muhasebe istatistikleri - Transaction tablosundan
   const [
     totalRevenue,
     totalExpenses,
     netProfit,
     monthlyRevenue
   ] = await Promise.all([
-    // Toplam gelir (tüm modüllerden)
-    Promise.all([
-      prisma.hotelReservation.aggregate({
-        where: { tenantId, status: "confirmed" },
-        _sum: { totalAmount: true }
-      }),
-      prisma.tourBooking.aggregate({
-        where: { tenantId, status: "confirmed" },
-        _sum: { totalAmount: true }
-      }),
-      prisma.transferBooking.aggregate({
-        where: { tenantId, status: "confirmed" },
-        _sum: { totalAmount: true }
-      }),
-      prisma.flightBooking.aggregate({
-        where: { tenantId, status: "confirmed" },
-        _sum: { totalAmount: true }
-      }),
-      prisma.healthPolicy.aggregate({
-        where: { tenantId, status: "active" },
-        _sum: { totalAmount: true }
-      })
-    ]).then(results => {
-      const total = results.reduce((sum, result) => sum + (result._sum.totalAmount || result._sum.totalAmount || 0), 0);
-      return total;
-    }),
-    
-    // Toplam gider (tahsilat tablosundan)
-    prisma.collection.aggregate({
-      where: { tenantId },
+    // Toplam gelir (Transaction tablosundan)
+    prisma.transaction.aggregate({
+      where: { tenantId, type: "income", status: "completed" },
       _sum: { amount: true }
     }).then(result => result._sum.amount || 0),
     
-    // Net kar hesaplama
+    // Toplam gider (Transaction tablosundan)
+    prisma.transaction.aggregate({
+      where: { tenantId, type: "expense", status: "completed" },
+      _sum: { amount: true }
+    }).then(result => result._sum.amount || 0),
+    
+    // Net kar hesaplama (gelir - gider)
     Promise.all([
-      prisma.hotelReservation.aggregate({
-        where: { tenantId, status: "confirmed" },
-        _sum: { totalAmount: true }
+      prisma.transaction.aggregate({
+        where: { tenantId, type: "income", status: "completed" },
+        _sum: { amount: true }
       }),
-      prisma.tourBooking.aggregate({
-        where: { tenantId, status: "confirmed" },
-        _sum: { totalAmount: true }
-      }),
-      prisma.transferBooking.aggregate({
-        where: { tenantId, status: "confirmed" },
-        _sum: { totalAmount: true }
-      }),
-      prisma.flightBooking.aggregate({
-        where: { tenantId, status: "confirmed" },
-        _sum: { totalAmount: true }
-      }),
-      prisma.healthPolicy.aggregate({
-        where: { tenantId, status: "active" },
-        _sum: { totalAmount: true }
-      }),
-      prisma.collection.aggregate({
-        where: { tenantId },
+      prisma.transaction.aggregate({
+        where: { tenantId, type: "expense", status: "completed" },
         _sum: { amount: true }
       })
     ]).then(results => {
-      const revenue = results.slice(0, 5).reduce((sum, result) => sum + (result._sum.totalAmount || result._sum.totalAmount || 0), 0);
-      const expenses = results[5]._sum.amount || 0;
+      const revenue = results[0]._sum.amount || 0;
+      const expenses = results[1]._sum.amount || 0;
       return revenue - expenses;
     }),
     
-    // Bu ayın geliri
-    Promise.all([
-      prisma.hotelReservation.aggregate({
-        where: { 
-          tenantId, 
-          status: "confirmed",
-          createdAt: {
-            gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
-          }
-        },
-        _sum: { totalAmount: true }
-      }),
-      prisma.tourBooking.aggregate({
-        where: { 
-          tenantId, 
-          status: "confirmed",
-          createdAt: {
-            gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
-          }
-        },
-        _sum: { totalAmount: true }
-      }),
-      prisma.transferBooking.aggregate({
-        where: { 
-          tenantId, 
-          status: "confirmed",
-          createdAt: {
-            gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
-          }
-        },
-        _sum: { totalAmount: true }
-      }),
-      prisma.flightBooking.aggregate({
-        where: { 
-          tenantId, 
-          status: "confirmed",
-          createdAt: {
-            gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
-          }
-        },
-        _sum: { totalAmount: true }
-      }),
-      prisma.healthPolicy.aggregate({
-        where: { 
-          tenantId, 
-          status: "active",
-          createdAt: {
-            gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
-          }
-        },
-        _sum: { totalAmount: true }
-      })
-    ]).then(results => {
-      return results.reduce((sum, result) => sum + (result._sum.totalAmount || result._sum.totalAmount || 0), 0);
-    })
+    // Bu ayın geliri (Transaction tablosundan)
+    prisma.transaction.aggregate({
+      where: { 
+        tenantId, 
+        type: "income", 
+        status: "completed",
+        createdAt: {
+          gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+        }
+      },
+      _sum: { amount: true }
+    }).then(result => result._sum.amount || 0)
   ]);
+
+  // Kategori bazında gelirler
+  const vehicleRevenueAgg = await prisma.transaction.aggregate({
+    where: { tenantId, type: "income", category: "arac" },
+    _sum: { amount: true }
+  });
+  const vehicleRevenue = vehicleRevenueAgg._sum.amount || 0;
+
+  const transferRevenueAgg = await prisma.transaction.aggregate({
+    where: { tenantId, type: "income", category: "transfer" },
+    _sum: { amount: true }
+  });
+  const transferRevenue = transferRevenueAgg._sum.amount || 0;
+
+  const tourRevenueAgg = await prisma.transaction.aggregate({
+    where: { tenantId, type: "income", category: "tur" },
+    _sum: { amount: true }
+  });
+  const tourRevenue = tourRevenueAgg._sum.amount || 0;
 
   // Son işlemler
   const recentCollections = await prisma.collection.findMany({
@@ -205,7 +144,7 @@ export default async function MuhasebePage() {
           <div className="modern-card p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-200">Son Tahsilatlar</h2>
-              <Link href="/muhasebe/tahsilatlar" className="modern-button-secondary text-sm">Tümünü Gör</Link>
+              <Link href="/muhasebe/gelirler" className="modern-button-secondary text-sm">Tümünü Gör</Link>
             </div>
             <div className="space-y-4">
               {recentCollections.length > 0 ? (
@@ -245,16 +184,20 @@ export default async function MuhasebePage() {
             <h3 className="font-semibold mb-4 text-slate-800 dark:text-slate-200">Finansal Özet</h3>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
+                <span className="text-sm text-slate-600 dark:text-slate-400">Araç Geliri</span>
+                <span className="text-sm font-medium text-slate-800 dark:text-slate-200">₺{vehicleRevenue.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between items-center">
                 <span className="text-sm text-slate-600 dark:text-slate-400">Otel Geliri</span>
                 <span className="text-sm font-medium text-slate-800 dark:text-slate-200">₺0</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-slate-600 dark:text-slate-400">Tur Geliri</span>
-                <span className="text-sm font-medium text-slate-800 dark:text-slate-200">₺0</span>
+                <span className="text-sm font-medium text-slate-800 dark:text-slate-200">₺{tourRevenue.toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-slate-600 dark:text-slate-400">Transfer Geliri</span>
-                <span className="text-sm font-medium text-slate-800 dark:text-slate-200">₺0</span>
+                <span className="text-sm font-medium text-slate-800 dark:text-slate-200">₺{transferRevenue.toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-slate-600 dark:text-slate-400">Uçak Geliri</span>

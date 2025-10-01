@@ -113,7 +113,23 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(booking, { status: 201 });
+    // Muhasebe kaydı: pending income / ucak kategorisi
+    const transaction = await prisma.transaction.create({
+      data: {
+        tenantId,
+        type: "income",
+        category: "ucak",
+        amount: parseInt(totalAmount),
+        description: `Uçak rezervasyon ücreti (${passengerName})`,
+        source: passengerName || "Müşteri",
+        reference: booking.id,
+        date: new Date(),
+        status: "pending",
+        notes: `Uçuş: ${flight.airline} ${flight.flightNumber}, ${seatClass} sınıf`,
+      },
+    });
+
+    return NextResponse.json({ booking, transaction }, { status: 201 });
   } catch (error) {
     console.error("Booking create error:", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });

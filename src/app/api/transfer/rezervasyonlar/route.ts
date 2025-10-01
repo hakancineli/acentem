@@ -5,10 +5,16 @@ import { cookies } from "next/headers";
 export async function GET(request: NextRequest) {
   try {
     const cookieStore = await cookies();
-    const tenantId = cookieStore.get("tenant-id")?.value;
+    let tenantId = cookieStore.get("tenant-id")?.value;
 
+    // Eğer cookie'de tenant yoksa, ilk tenant ile devam et (formların çalışması için güvenli varsayılan)
     if (!tenantId) {
-      return NextResponse.json({ error: "Tenant bulunamadı" }, { status: 400 });
+      const firstTenant = await prisma.tenant.findFirst({ orderBy: { createdAt: "asc" } });
+      if (firstTenant?.id) {
+        tenantId = firstTenant.id;
+      } else {
+        return NextResponse.json({ error: "Tenant bulunamadı" }, { status: 400 });
+      }
     }
 
     const { searchParams } = new URL(request.url);
@@ -76,7 +82,6 @@ export async function POST(request: NextRequest) {
       pickupDate, 
       passengerCount,
       passengers,
-      distance, 
       currency,
       totalAmount, 
       notes 
@@ -101,6 +106,22 @@ export async function POST(request: NextRequest) {
         totalAmount: parseInt(totalAmount),
         status: "waiting_for_driver", // Şoför ataması bekleniyor
         notes: `${notes}\nPara Birimi: ${currency}\nYolcu Sayısı: ${passengerCount}`,
+      },
+    });
+
+    // Pending transaction oluştur
+    await prisma.transaction.create({
+      data: {
+        tenantId,
+        type: "income",
+        category: "transfer",
+        amount: parseInt(totalAmount),
+        description: `Transfer ücreti (${passengers.join(", ")})`,
+        source: passengers.join(", ") || "Müşteri",
+        reference: booking.id,
+        date: new Date(pickupDate),
+        status: "pending", // Henüz ödenmemiş
+        notes: `Transfer: ${pickupLocation} → ${dropoffLocation}`,
       },
     });
 

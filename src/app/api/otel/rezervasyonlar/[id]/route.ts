@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const cookieStore = await cookies();
@@ -14,9 +14,11 @@ export async function GET(
       return NextResponse.json({ error: "Tenant bulunamadı" }, { status: 400 });
     }
 
+    const { id } = await params;
+
     const reservation = await prisma.hotelReservation.findFirst({
       where: {
-        id: params.id,
+        id,
         tenantId,
       },
       include: {
@@ -28,7 +30,7 @@ export async function GET(
       return NextResponse.json({ error: "Rezervasyon bulunamadı" }, { status: 404 });
     }
 
-    return NextResponse.json(reservation);
+    return NextResponse.json({ reservation });
   } catch (error) {
     console.error("Reservation get error:", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
@@ -37,7 +39,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const cookieStore = await cookies();
@@ -61,11 +63,16 @@ export async function PUT(
       notes 
     } = body;
 
+    const { id } = await params;
+
     // Check if reservation exists and belongs to tenant
     const existingReservation = await prisma.hotelReservation.findFirst({
       where: {
-        id: params.id,
+        id,
         tenantId,
+      },
+      include: {
+        hotel: true,
       },
     });
 
@@ -74,7 +81,7 @@ export async function PUT(
     }
 
     const reservation = await prisma.hotelReservation.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(guestName && { guestName }),
         ...(guestEmail && { guestEmail }),
@@ -89,7 +96,46 @@ export async function PUT(
       },
     });
 
-    return NextResponse.json(reservation);
+    let voucher: any = null;
+
+    // Onaylandığında: otel gelir fişi (voucher) oluştur
+    if (status === "confirmed") {
+      // Muhasebe kaydı: income / otel kategorisi
+      // Mevcut fiş varsa güncelle, yoksa oluştur
+      const existingTx = await prisma.transaction.findFirst({ 
+        where: { tenantId, reference: reservation.id } 
+      });
+      
+      if (existingTx) {
+        voucher = await prisma.transaction.update({
+          where: { id: existingTx.id },
+          data: {
+            amount: reservation.totalAmount,
+            description: `Otel rezervasyon ücreti (${reservation.guestName})`,
+            date: new Date(),
+            status: "completed",
+            notes: `Otel: ${existingReservation.hotel.name}, ${reservation.rooms} oda, ${reservation.adults} yetişkin, ${reservation.children} çocuk`,
+          },
+        });
+      } else {
+        voucher = await prisma.transaction.create({
+          data: {
+            tenantId,
+            type: "income",
+            category: "otel",
+            amount: reservation.totalAmount,
+            description: `Otel rezervasyon ücreti (${reservation.guestName})`,
+            source: reservation.guestName || "Müşteri",
+            reference: reservation.id,
+            date: new Date(),
+            status: "completed",
+            notes: `Otel: ${existingReservation.hotel.name}, ${reservation.rooms} oda, ${reservation.adults} yetişkin, ${reservation.children} çocuk`,
+          },
+        });
+      }
+    }
+
+    return NextResponse.json({ reservation, voucher });
   } catch (error) {
     console.error("Reservation update error:", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
@@ -98,7 +144,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const cookieStore = await cookies();
@@ -108,10 +154,12 @@ export async function DELETE(
       return NextResponse.json({ error: "Tenant bulunamadı" }, { status: 400 });
     }
 
+    const { id } = await params;
+
     // Check if reservation exists and belongs to tenant
     const existingReservation = await prisma.hotelReservation.findFirst({
       where: {
-        id: params.id,
+        id,
         tenantId,
       },
     });
@@ -121,7 +169,7 @@ export async function DELETE(
     }
 
     await prisma.hotelReservation.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ message: "Rezervasyon silindi" });

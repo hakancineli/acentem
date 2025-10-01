@@ -37,7 +37,7 @@ export default async function SaglikPage() {
     prisma.healthPolicy.count({ where: { tenantId, status: "active" } }),
     prisma.healthPolicy.aggregate({
       where: { tenantId, status: "active" },
-      _sum: { premium: true }
+      _sum: { totalAmount: true }
     })
   ]);
 
@@ -85,7 +85,7 @@ export default async function SaglikPage() {
           <div className="stat-label">Aktif Poliçe</div>
         </div>
         <div className="stat-card">
-          <div className="stat-number">₺{totalRevenue._sum.premium?.toLocaleString() || 0}</div>
+          <div className="stat-number">₺{totalRevenue._sum.totalAmount?.toLocaleString() || 0}</div>
           <div className="stat-label">Toplam Prim</div>
         </div>
       </div>
@@ -103,7 +103,7 @@ export default async function SaglikPage() {
                   <div key={policy.id} className="modern-card-gradient p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-semibold text-slate-800 dark:text-slate-200">{policy.holderName}</h3>
+                        <h3 className="font-semibold text-slate-800 dark:text-slate-200">{policy.customerName}</h3>
                         <p className="text-sm text-slate-600 dark:text-slate-400">
                           {policy.insurance.provider} - {policy.insurance.planName}
                         </p>
@@ -123,8 +123,8 @@ export default async function SaglikPage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-lg font-bold text-pink-600 dark:text-pink-400">₺{policy.premium.toLocaleString()}</div>
-                        <div className="text-xs text-slate-500">{policy.policyNumber}</div>
+                        <div className="text-lg font-bold text-pink-600 dark:text-pink-400">₺{policy.totalAmount.toLocaleString()}</div>
+                        <div className="text-xs text-slate-500">{policy.id.slice(-8)}</div>
                       </div>
                     </div>
                   </div>

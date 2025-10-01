@@ -76,6 +76,7 @@ export default async function RezervasyonlarPage({ searchParams }: Rezervasyonla
       take: limit,
       include: {
         tour: true,
+        driver: true,
       },
     }),
     prisma.tourBooking.count({ where }),
@@ -220,6 +221,19 @@ export default async function RezervasyonlarPage({ searchParams }: Rezervasyonla
                         <span className="font-medium">Email:</span> {booking.customerEmail}
                       </div>
                     </div>
+                    {booking.driver && (
+                      <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                        <div className="text-sm text-blue-800 dark:text-blue-300">
+                          <span className="font-medium">Şoför:</span> {booking.driver.name} 
+                          {booking.driverCommission && (
+                            <span className="ml-2">(₺{booking.driverCommission.toLocaleString()} komisyon)</span>
+                          )}
+                          {booking.driverPaid && (
+                            <span className="ml-2 text-green-600 dark:text-green-400">✓ Ödendi</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
                     {booking.notes && (
                       <p className="text-sm text-slate-600 dark:text-slate-400 mt-2 line-clamp-2">
                         <span className="font-medium">Notlar:</span> {booking.notes}

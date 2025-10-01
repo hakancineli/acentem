@@ -77,17 +77,17 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { 
       insuranceId, 
-      policyNumber, 
-      holderName, 
-      holderEmail, 
+      customerName, 
+      customerPhone,
+      customerEmail, 
       startDate, 
       endDate, 
-      premium, 
+      totalAmount, 
       status = "active",
       notes 
     } = body;
 
-    if (!insuranceId || !policyNumber || !holderName || !holderEmail || !startDate || !endDate || !premium) {
+    if (!insuranceId || !customerName || !customerPhone || !startDate || !endDate || !totalAmount) {
       return NextResponse.json({ error: "Gerekli alanlar eksik" }, { status: 400 });
     }
 
@@ -107,18 +107,34 @@ export async function POST(request: NextRequest) {
       data: {
         tenantId,
         insuranceId,
-        policyNumber,
-        holderName,
-        holderEmail,
+        customerName,
+        customerPhone,
+        customerEmail,
         startDate: new Date(startDate),
         endDate: new Date(endDate),
-        premium: parseInt(premium),
+        totalAmount: parseInt(totalAmount),
         status,
         notes,
       },
     });
 
-    return NextResponse.json(policy, { status: 201 });
+    // Muhasebe kaydı: pending income / saglik kategorisi
+    const transaction = await prisma.transaction.create({
+      data: {
+        tenantId,
+        type: "income",
+        category: "saglik",
+        amount: parseInt(totalAmount),
+        description: `Sağlık sigortası primi (${customerName})`,
+        source: customerName || "Müşteri",
+        reference: policy.id,
+        date: new Date(),
+        status: "pending",
+        notes: `Sigorta: ${insurance.provider} ${insurance.planName}, ${new Date(startDate).toLocaleDateString("tr-TR")} - ${new Date(endDate).toLocaleDateString("tr-TR")}`,
+      },
+    });
+
+    return NextResponse.json({ policy, transaction }, { status: 201 });
   } catch (error) {
     console.error("Policy create error:", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });

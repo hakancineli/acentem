@@ -93,7 +93,7 @@ export default async function GelirlerPage({ searchParams }: GelirlerPageProps) 
 
   // Category counts
   const categories = [
-    "otel", "tur", "transfer", "ucak", "saglik", "diger"
+    "arac", "otel", "tur", "transfer", "ucak", "saglik", "diger"
   ];
 
   return (
@@ -151,6 +151,7 @@ export default async function GelirlerPage({ searchParams }: GelirlerPageProps) 
           <div className="flex gap-2">
             <select name="category" defaultValue={category} className="modern-input">
               <option value="">Tüm Kategoriler</option>
+              <option value="arac">Araç</option>
               <option value="otel">Otel</option>
               <option value="tur">Tur</option>
               <option value="transfer">Transfer</option>
@@ -220,6 +221,7 @@ export default async function GelirlerPage({ searchParams }: GelirlerPageProps) 
                          transaction.status === "pending" ? "Beklemede" : "İptal"}
                       </span>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        transaction.category === "arac" ? "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400" :
                         transaction.category === "otel" ? "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400" :
                         transaction.category === "tur" ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400" :
                         transaction.category === "transfer" ? "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400" :
@@ -227,7 +229,8 @@ export default async function GelirlerPage({ searchParams }: GelirlerPageProps) 
                         transaction.category === "saglik" ? "bg-pink-100 text-pink-800 dark:bg-pink-900/20 dark:text-pink-400" :
                         "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400"
                       }`}>
-                        {transaction.category === "otel" ? "Otel" :
+                        {transaction.category === "arac" ? "Araç" :
+                         transaction.category === "otel" ? "Otel" :
                          transaction.category === "tur" ? "Tur" :
                          transaction.category === "transfer" ? "Transfer" :
                          transaction.category === "ucak" ? "Uçak" :

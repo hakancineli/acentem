@@ -64,11 +64,12 @@ export default async function AraclarPage({
 
   const totalPages = Math.ceil(totalCount / limit);
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number | null) => {
+    if (amount == null) return "-";
     return new Intl.NumberFormat("tr-TR", {
       style: "currency",
       currency: "TRY"
-    }).format(amount / 100);
+    }).format(amount);
   };
 
   const getStatusBadge = (status: string) => {

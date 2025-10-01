@@ -69,7 +69,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Tenant bulunamadı" }, { status: 400 });
     }
 
-    const body = await request.json();
+    // Hem JSON hem form submit (application/x-www-form-urlencoded veya multipart) destekle
+    const contentType = request.headers.get("content-type") || "";
+    const isJson = contentType.includes("application/json");
+    let body: any;
+    if (isJson) {
+      body = await request.json();
+    } else {
+      const form = await request.formData();
+      body = Object.fromEntries(form.entries());
+    }
     const {
       brand,
       model,
@@ -102,20 +111,21 @@ export async function POST(request: NextRequest) {
         tenantId,
         brand,
         model,
-        year: parseInt(year),
+        year: parseInt(String(year)),
         type,
         fuel,
         transmission,
-        seats: parseInt(seats),
-        doors: parseInt(doors),
+        seats: parseInt(String(seats)),
+        doors: parseInt(String(doors)),
         engine,
         color,
         plate,
         vin,
-        dailyRate: parseInt(dailyRate),
-        weeklyRate: weeklyRate ? parseInt(weeklyRate) : null,
-        monthlyRate: monthlyRate ? parseInt(monthlyRate) : null,
-        deposit: deposit ? parseInt(deposit) : null,
+        // Fiyatlar düz TL tam sayı olarak saklanacak
+        dailyRate: parseInt(String(dailyRate)),
+        weeklyRate: weeklyRate ? parseInt(String(weeklyRate)) : null,
+        monthlyRate: monthlyRate ? parseInt(String(monthlyRate)) : null,
+        deposit: deposit ? parseInt(String(deposit)) : null,
         location,
         description,
         features,
@@ -123,9 +133,14 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Form submit ise liste sayfasına yönlendir
+    if (!isJson) {
+      return NextResponse.redirect(new URL("/arac/araclar", request.url), { status: 303 });
+    }
+
     return NextResponse.json(vehicle, { status: 201 });
   } catch (error) {
     console.error("Vehicle create error:", error);
-    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası", details: error instanceof Error ? error.message : String(error) }, { status: 500 });
   }
 }

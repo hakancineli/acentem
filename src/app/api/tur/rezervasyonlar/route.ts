@@ -114,6 +114,22 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Pending transaction oluştur
+    await prisma.transaction.create({
+      data: {
+        tenantId,
+        type: "income",
+        category: "tur",
+        amount: parseInt(totalAmount),
+        description: `Tur rezervasyon ücreti (${customerName})`,
+        source: customerName || "Müşteri",
+        reference: booking.id,
+        date: new Date(startDate),
+        status: "pending", // Henüz ödenmemiş
+        notes: `Tur: ${tour.name}, Katılımcı: ${participants} kişi`,
+      },
+    });
+
     return NextResponse.json(booking, { status: 201 });
   } catch (error) {
     console.error("Booking create error:", error);

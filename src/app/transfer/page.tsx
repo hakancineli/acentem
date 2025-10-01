@@ -173,22 +173,34 @@ export default async function TransferPage() {
             </div>
           </div>
 
-          {/* Hızlı Erişim Butonları */}
           <div className="modern-card p-6">
-            <h3 className="font-semibold mb-4 text-slate-800 dark:text-slate-200">Hızlı Erişim</h3>
-            <div className="grid grid-cols-1 gap-3">
-              <Link href="/transfer/araclar/yeni" className="modern-button-secondary text-center">
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                Yeni Araç Ekle
-              </Link>
-              <Link href="/transfer/rezervasyonlar/yeni" className="modern-button-secondary text-center">
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                </svg>
-                Yeni Rezervasyon
-              </Link>
+            <h3 className="font-semibold mb-4 text-slate-800 dark:text-slate-200">Özellikler</h3>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                <span className="text-sm text-slate-600 dark:text-slate-400">Araç yönetimi</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                <span className="text-sm text-slate-600 dark:text-slate-400">Rezervasyon takibi</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                <span className="text-sm text-slate-600 dark:text-slate-400">Şoför ataması</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                <span className="text-sm text-slate-600 dark:text-slate-400">Fiyat hesaplama</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="modern-card p-6">
+            <h3 className="font-semibold mb-4 text-slate-800 dark:text-slate-200">Hızlı İşlemler</h3>
+            <div className="space-y-3">
+              <Link href="/transfer/araclar/yeni" className="w-full modern-button block text-center">Yeni Araç Ekle</Link>
+              <Link href="/transfer/araclar" className="w-full modern-button-secondary block text-center">Araç Listesi</Link>
+              <Link href="/transfer/rezervasyonlar" className="w-full modern-button-secondary block text-center">Rezervasyonlar</Link>
             </div>
           </div>
         </div>

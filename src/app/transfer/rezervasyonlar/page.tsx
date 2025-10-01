@@ -222,7 +222,7 @@ export default async function RezervasyonlarPage({ searchParams }: Rezervasyonla
                   </div>
                   <div className="flex items-center gap-2 ml-4">
                     <Link 
-                      href={`/transfer/rezervasyonlar/${booking.id}`}
+                      href={`/transfer/rezervasyonlar/${booking.id}/duzenle`}
                       className="modern-button-secondary text-sm"
                     >
                       Düzenle

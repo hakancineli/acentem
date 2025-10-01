@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const cookieStore = await cookies();
@@ -14,13 +14,16 @@ export async function GET(
       return NextResponse.json({ error: "Tenant bulunamadı" }, { status: 400 });
     }
 
+    const { id } = await params;
+
     const booking = await prisma.tourBooking.findFirst({
       where: {
-        id: params.id,
+        id,
         tenantId,
       },
       include: {
         tour: true,
+        driver: true,
       },
     });
 
@@ -28,7 +31,7 @@ export async function GET(
       return NextResponse.json({ error: "Rezervasyon bulunamadı" }, { status: 404 });
     }
 
-    return NextResponse.json(booking);
+    return NextResponse.json({ booking });
   } catch (error) {
     console.error("Booking get error:", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
@@ -37,7 +40,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const cookieStore = await cookies();
@@ -50,18 +53,25 @@ export async function PUT(
     const body = await request.json();
     const { 
       customerName, 
+      customerPhone,
       customerEmail, 
       startDate, 
       participants, 
-      totalAmount, 
+      totalAmount,
+      driverId,
+      driverCommission,
+      driverPaid,
+      paymentMethod,
       status, 
       notes 
     } = body;
 
+    const { id } = await params;
+
     // Check if booking exists and belongs to tenant
     const existingBooking = await prisma.tourBooking.findFirst({
       where: {
-        id: params.id,
+        id,
         tenantId,
       },
     });
@@ -71,19 +81,63 @@ export async function PUT(
     }
 
     const booking = await prisma.tourBooking.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(customerName && { customerName }),
-        ...(customerEmail && { customerEmail }),
+        ...(customerPhone && { customerPhone }),
+        ...(customerEmail !== undefined && { customerEmail }),
         ...(startDate && { startDate: new Date(startDate) }),
         ...(participants && { participants: parseInt(participants) }),
         ...(totalAmount && { totalAmount: parseInt(totalAmount) }),
+        ...(driverId !== undefined && { driverId: driverId || null }),
+        ...(driverCommission && { driverCommission: parseInt(driverCommission) }),
+        ...(driverPaid !== undefined && { driverPaid }),
+        ...(paymentMethod && { paymentMethod }),
         ...(status && { status }),
         ...(notes !== undefined && { notes }),
       },
     });
 
-    return NextResponse.json(booking);
+    let voucher: any = null;
+
+    // Tamamlandığında: tur gelir fişi (voucher) oluştur
+    if (status === "confirmed") {
+      // Muhasebe kaydı: income / tur kategorisi
+      // Mevcut fiş varsa güncelle, yoksa oluştur
+      const existingTx = await prisma.transaction.findFirst({ 
+        where: { tenantId, reference: booking.id } 
+      });
+      
+      if (existingTx) {
+        voucher = await prisma.transaction.update({
+          where: { id: existingTx.id },
+          data: {
+            amount: booking.totalAmount,
+            description: `Tur rezervasyon ücreti (${booking.customerName})`,
+            date: new Date(),
+            status: "completed",
+            notes: `Tur: ${booking.tour?.name || 'Bilinmeyen'}, Katılımcı: ${booking.participants} kişi`,
+          },
+        });
+      } else {
+        voucher = await prisma.transaction.create({
+          data: {
+            tenantId,
+            type: "income",
+            category: "tur",
+            amount: booking.totalAmount,
+            description: `Tur rezervasyon ücreti (${booking.customerName})`,
+            source: booking.customerName || "Müşteri",
+            reference: booking.id,
+            date: new Date(),
+            status: "completed",
+            notes: `Tur: ${booking.tour?.name || 'Bilinmeyen'}, Katılımcı: ${booking.participants} kişi`,
+          },
+        });
+      }
+    }
+
+    return NextResponse.json({ booking, voucher });
   } catch (error) {
     console.error("Booking update error:", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
@@ -92,7 +146,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const cookieStore = await cookies();
@@ -102,10 +156,12 @@ export async function DELETE(
       return NextResponse.json({ error: "Tenant bulunamadı" }, { status: 400 });
     }
 
+    const { id } = await params;
+
     // Check if booking exists and belongs to tenant
     const existingBooking = await prisma.tourBooking.findFirst({
       where: {
-        id: params.id,
+        id,
         tenantId,
       },
     });
@@ -115,7 +171,7 @@ export async function DELETE(
     }
 
     await prisma.tourBooking.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ message: "Rezervasyon silindi" });

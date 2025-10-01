@@ -46,7 +46,7 @@ export default async function YeniKiralamaPage() {
                 <option value="">Araç seçin</option>
                 {vehicles.map((vehicle) => (
                   <option key={vehicle.id} value={vehicle.id}>
-                    {vehicle.brand} {vehicle.model} - {vehicle.plate} - {vehicle.dailyRate / 100}₺/gün
+                    {vehicle.brand} {vehicle.model} - {vehicle.plate} - {new Intl.NumberFormat("tr-TR").format(vehicle.dailyRate)}₺/gün
                   </option>
                 ))}
               </select>

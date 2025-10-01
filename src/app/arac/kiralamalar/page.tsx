@@ -36,8 +36,8 @@ export default async function KiralamalarPage({
   const status = params.status || "";
   const vehicleId = params.vehicle || "";
 
-  // Build where clause
-  const where = {
+  // Common filters for both
+  const commonWhere = {
     tenantId,
     ...(vehicleId && { vehicleId }),
     ...(status && { status }),
@@ -50,27 +50,67 @@ export default async function KiralamalarPage({
         { vehicle: { model: { contains: q, mode: "insensitive" as const } } },
       ],
     }),
+  } as const;
+
+  const [rentalsRaw, bookingsRaw] = await Promise.all([
+    prisma.vehicleRental.findMany({ where: commonWhere, orderBy: { [sort]: dir }, take: limit * 5, include: { vehicle: true } }),
+    prisma.vehicleBooking.findMany({ where: commonWhere, orderBy: { [sort]: dir }, take: limit * 5, include: { vehicle: true } }),
+  ]);
+
+  type RowItem = {
+    id: string;
+    kind: "rental" | "booking";
+    customerName: string;
+    customerPhone: string;
+    customerEmail?: string | null;
+    vehicle: { brand: string; model: string; plate: string };
+    startDate: Date;
+    endDate: Date;
+    days: number;
+    totalAmount: number;
+    status: string;
+    createdAt: Date;
   };
 
-  // Get rentals with pagination
-  const [rentals, totalCount] = await Promise.all([
-    prisma.vehicleRental.findMany({
-      where,
-      orderBy: { [sort]: dir },
-      skip: (page - 1) * limit,
-      take: limit,
-      include: {
-        vehicle: true,
-      },
-    }),
-    prisma.vehicleRental.count({ where }),
-  ]);
+  const rentals: RowItem[] = rentalsRaw.map((r) => ({
+    id: r.id,
+    kind: "rental",
+    customerName: r.customerName,
+    customerPhone: r.customerPhone,
+    customerEmail: r.customerEmail,
+    vehicle: { brand: r.vehicle.brand, model: r.vehicle.model, plate: r.vehicle.plate },
+    startDate: r.startDate,
+    endDate: r.endDate,
+    days: r.days,
+    totalAmount: r.totalAmount,
+    status: r.status,
+    createdAt: r.createdAt,
+  }));
+
+  const bookings: RowItem[] = bookingsRaw.map((b) => ({
+    id: b.id,
+    kind: "booking",
+    customerName: b.customerName,
+    customerPhone: b.customerPhone,
+    customerEmail: b.customerEmail,
+    vehicle: { brand: b.vehicle.brand, model: b.vehicle.model, plate: b.vehicle.plate },
+    startDate: b.startDate,
+    endDate: b.endDate,
+    days: b.days,
+    totalAmount: b.totalAmount,
+    status: b.status,
+    createdAt: b.createdAt,
+  }));
+
+  const merged = [...rentals, ...bookings].sort((a, b) => (dir === "asc" ? 1 : -1) * (a.createdAt.getTime() - b.createdAt.getTime()));
+  const totalCount = merged.length;
+  const rows = merged.slice((page - 1) * limit, page * limit);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("tr-TR", {
       style: "currency",
       currency: "TRY"
-    }).format(amount / 100);
+    }).format(amount);
   };
 
   const formatDate = (date: Date) => {
@@ -202,7 +242,7 @@ export default async function KiralamalarPage({
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {rentals.map((rental) => (
+              {rows.map((rental) => (
                 <tr key={rental.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
@@ -244,18 +284,16 @@ export default async function KiralamalarPage({
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <Link
-                      href={`/arac/kiralamalar/${rental.id}`}
-                      className="text-blue-600 hover:text-blue-900 mr-3"
-                    >
-                      Detay
-                    </Link>
-                    <Link
-                      href={`/arac/kiralamalar/${rental.id}/duzenle`}
-                      className="text-green-600 hover:text-green-900"
-                    >
-                      Düzenle
-                    </Link>
+                    {rental.kind === "rental" ? (
+                      <>
+                        <a href={`/api/arac/kiralamalar/${rental.id}/voucher`} className="text-blue-600 hover:text-blue-900 mr-3" download>
+                          Voucher (PDF)
+                        </a>
+                        <Link href={`/arac/kiralamalar/${rental.id}/duzenle`} className="text-green-600 hover:text-green-900">Düzenle</Link>
+                      </>
+                    ) : (
+                      <Link href={`/arac/rezervasyonlar/${rental.id}/duzenle`} className="text-green-600 hover:text-green-900">Düzenle</Link>
+                    )}
                   </td>
                 </tr>
               ))}

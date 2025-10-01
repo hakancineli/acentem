@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const cookieStore = await cookies();
@@ -14,9 +14,11 @@ export async function GET(
       return NextResponse.json({ error: "Tenant bulunamadı" }, { status: 400 });
     }
 
+    const { id } = await params;
+
     const booking = await prisma.flightBooking.findFirst({
       where: {
-        id: params.id,
+        id,
         tenantId,
       },
       include: {
@@ -28,7 +30,7 @@ export async function GET(
       return NextResponse.json({ error: "Rezervasyon bulunamadı" }, { status: 404 });
     }
 
-    return NextResponse.json(booking);
+    return NextResponse.json({ booking });
   } catch (error) {
     console.error("Booking get error:", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
@@ -37,7 +39,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const cookieStore = await cookies();
@@ -57,11 +59,16 @@ export async function PUT(
       notes 
     } = body;
 
+    const { id } = await params;
+
     // Check if booking exists and belongs to tenant
     const existingBooking = await prisma.flightBooking.findFirst({
       where: {
-        id: params.id,
+        id,
         tenantId,
+      },
+      include: {
+        flight: true,
       },
     });
 
@@ -70,7 +77,7 @@ export async function PUT(
     }
 
     const booking = await prisma.flightBooking.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(passengerName && { passengerName }),
         ...(passengerEmail && { passengerEmail }),
@@ -81,7 +88,46 @@ export async function PUT(
       },
     });
 
-    return NextResponse.json(booking);
+    let voucher: any = null;
+
+    // Onaylandığında: uçak gelir fişi (voucher) oluştur
+    if (status === "confirmed") {
+      // Muhasebe kaydı: income / ucak kategorisi
+      // Mevcut fiş varsa güncelle, yoksa oluştur
+      const existingTx = await prisma.transaction.findFirst({ 
+        where: { tenantId, reference: booking.id } 
+      });
+      
+      if (existingTx) {
+        voucher = await prisma.transaction.update({
+          where: { id: existingTx.id },
+          data: {
+            amount: booking.totalAmount,
+            description: `Uçak rezervasyon ücreti (${booking.passengerName})`,
+            date: new Date(),
+            status: "completed",
+            notes: `Uçuş: ${existingBooking.flight.airline} ${existingBooking.flight.flightNumber}, ${booking.seatClass} sınıf`,
+          },
+        });
+      } else {
+        voucher = await prisma.transaction.create({
+          data: {
+            tenantId,
+            type: "income",
+            category: "ucak",
+            amount: booking.totalAmount,
+            description: `Uçak rezervasyon ücreti (${booking.passengerName})`,
+            source: booking.passengerName || "Müşteri",
+            reference: booking.id,
+            date: new Date(),
+            status: "completed",
+            notes: `Uçuş: ${existingBooking.flight.airline} ${existingBooking.flight.flightNumber}, ${booking.seatClass} sınıf`,
+          },
+        });
+      }
+    }
+
+    return NextResponse.json({ booking, voucher });
   } catch (error) {
     console.error("Booking update error:", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
@@ -90,7 +136,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const cookieStore = await cookies();
@@ -100,10 +146,12 @@ export async function DELETE(
       return NextResponse.json({ error: "Tenant bulunamadı" }, { status: 400 });
     }
 
+    const { id } = await params;
+
     // Check if booking exists and belongs to tenant
     const existingBooking = await prisma.flightBooking.findFirst({
       where: {
-        id: params.id,
+        id,
         tenantId,
       },
     });
@@ -113,7 +161,7 @@ export async function DELETE(
     }
 
     await prisma.flightBooking.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ message: "Rezervasyon silindi" });

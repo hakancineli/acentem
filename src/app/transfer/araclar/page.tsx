@@ -66,11 +66,6 @@ export default async function AraclarPage({ searchParams }: AraclarPageProps) {
       orderBy: { [sort]: dir },
       skip: (page - 1) * limit,
       take: limit,
-      include: {
-        _count: {
-          select: { bookings: true },
-        },
-      },
     }),
     prisma.transfer.count({ where }),
   ]);
@@ -107,7 +102,8 @@ export default async function AraclarPage({ searchParams }: AraclarPageProps) {
         </div>
         <div className="stat-card">
           <div className="stat-number">
-            {transfers.reduce((sum, transfer) => sum + transfer._count.bookings, 0)}
+            {/* Rezervasyon ilişkisi kaldırıldığı için toplam rezervasyon gösterimi devre dışı */}
+            0
           </div>
           <div className="stat-label">Toplam Rezervasyon</div>
         </div>
@@ -187,7 +183,8 @@ export default async function AraclarPage({ searchParams }: AraclarPageProps) {
                       </div>
                     </div>
                     <div className="flex items-center gap-4 mt-3 text-sm text-slate-500 dark:text-slate-500">
-                      <span>Rezervasyon: {transfer._count.bookings}</span>
+                      {/* Rezervasyon sayısı kaldırıldı */}
+                      <span>Rezervasyon: -</span>
                       <span>Oluşturulma: {transfer.createdAt.toLocaleDateString("tr-TR")}</span>
                     </div>
                   </div>

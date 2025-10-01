@@ -7,10 +7,12 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "prisma:seed": "ts-node --compiler-options '{\"module\":\"commonjs\"}' prisma/seed.ts"
+    "prisma:seed": "ts-node --compiler-options '{\"module\":\"commonjs\"}' prisma/seed.ts",
+    "cleanup:vehicle-bookings": "ts-node --compiler-options '{\"module\":\"commonjs\"}' prisma/cleanup_vehicle_bookings.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.16.3",
+    "jspdf": "^3.0.3",
     "next": "15.5.4",
     "react": "19.1.0",
     "react-dom": "19.1.0"

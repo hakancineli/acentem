@@ -18,39 +18,29 @@ export default async function AracPage() {
   const [
     totalVehicles,
     totalRentals,
-    pendingBookings,
     totalRevenue
   ] = await Promise.all([
     prisma.vehicle.count({ where: { tenantId } }),
     prisma.vehicleRental.count({ where: { tenantId } }),
-    prisma.vehicleBooking.count({ where: { tenantId, status: "pending" } }),
     prisma.transaction.aggregate({
       where: { tenantId, type: "income", category: "arac" },
       _sum: { amount: true }
     })
   ]);
 
-  // Son kiralama işlemleri
+  // Son kiralamalar (liste tabloda kullanılacak)
   const recentRentals = await prisma.vehicleRental.findMany({
     where: { tenantId },
     include: { vehicle: true },
     orderBy: { createdAt: "desc" },
-    take: 5
-  });
-
-  // Son rezervasyonlar
-  const recentBookings = await prisma.vehicleBooking.findMany({
-    where: { tenantId },
-    include: { vehicle: true },
-    orderBy: { createdAt: "desc" },
-    take: 5
+    take: 20,
   });
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("tr-TR", {
       style: "currency",
       currency: "TRY"
-    }).format(amount / 100);
+    }).format(amount);
   };
 
   const formatDate = (date: Date) => {
@@ -99,14 +89,7 @@ export default async function AracPage() {
             Araç kiralama işlemlerini yönetin
           </p>
         </div>
-        <div className="flex gap-3">
-          <Link href="/arac/araclar/yeni" className="modern-button">
-            Yeni Araç
-          </Link>
-          <Link href="/arac/kiralamalar/yeni" className="modern-button-secondary">
-            Yeni Kiralama
-          </Link>
-        </div>
+        <div />
       </div>
 
       {/* KPI Kartları */}
@@ -147,23 +130,7 @@ export default async function AracPage() {
           </div>
         </div>
 
-        <div className="modern-card p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                Bekleyen Rezervasyon
-              </p>
-              <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">
-                {pendingBookings}
-              </p>
-            </div>
-            <div className="p-3 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
-              <svg className="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-        </div>
+        
 
         <div className="modern-card p-6">
           <div className="flex items-center justify-between">
@@ -184,111 +151,66 @@ export default async function AracPage() {
         </div>
       </div>
 
-      {/* İçerik Alanı */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Son Kiralama İşlemleri */}
-        <div className="modern-card p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-              Son Kiralama İşlemleri
-            </h3>
-            <Link href="/arac/kiralama" className="text-blue-600 dark:text-blue-400 hover:underline">
-              Tümünü Gör
-            </Link>
-          </div>
-          <div className="space-y-4">
-            {recentRentals.map((rental) => (
-              <div key={rental.id} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3">
-                    <div>
-                      <p className="font-medium text-slate-900 dark:text-slate-100">
-                        {rental.customerName}
-                      </p>
-                      <p className="text-sm text-slate-600 dark:text-slate-400">
-                        {rental.vehicle.brand} {rental.vehicle.model}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-2 flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
-                    <span>{formatDate(rental.startDate)} - {formatDate(rental.endDate)}</span>
-                    <span>{rental.days} gün</span>
-                    <span>{formatCurrency(rental.totalAmount)}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {getStatusBadge(rental.status)}
-                </div>
-              </div>
-            ))}
-            {recentRentals.length === 0 && (
-              <p className="text-slate-500 dark:text-slate-400 text-center py-4">
-                Henüz kiralama işlemi bulunmuyor
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Son Rezervasyonlar */}
-        <div className="modern-card p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-              Son Rezervasyonlar
-            </h3>
-            <Link href="/arac/rezervasyonlar" className="text-blue-600 dark:text-blue-400 hover:underline">
-              Tümünü Gör
-            </Link>
-          </div>
-          <div className="space-y-4">
-            {recentBookings.map((booking) => (
-              <div key={booking.id} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3">
-                    <div>
-                      <p className="font-medium text-slate-900 dark:text-slate-100">
-                        {booking.customerName}
-                      </p>
-                      <p className="text-sm text-slate-600 dark:text-slate-400">
-                        {booking.vehicle.brand} {booking.vehicle.model}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-2 flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
-                    <span>{formatDate(booking.startDate)} - {formatDate(booking.endDate)}</span>
-                    <span>{booking.days} gün</span>
-                    <span>{formatCurrency(booking.totalAmount)}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {getStatusBadge(booking.status)}
-                </div>
-              </div>
-            ))}
-            {recentBookings.length === 0 && (
-              <p className="text-slate-500 dark:text-slate-400 text-center py-4">
-                Henüz rezervasyon bulunmuyor
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Hızlı İşlemler */}
+      {/* Hızlı İşlemler (üstte) */}
       <div className="modern-card p-6">
         <h3 className="font-semibold mb-4 text-slate-800 dark:text-slate-200">Hızlı İşlemler</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Link href="/arac/araclar/yeni" className="modern-button block text-center">
-            Yeni Araç Ekle
-          </Link>
-          <Link href="/arac/araclar" className="modern-button-secondary block text-center">
-            Araç Listesi
-          </Link>
-          <Link href="/arac/kiralamalar/yeni" className="modern-button-secondary block text-center">
-            Yeni Kiralama
-          </Link>
-          <Link href="/arac/rezervasyonlar" className="modern-button-secondary block text-center">
-            Rezervasyonlar
-          </Link>
+          <Link href="/arac/araclar/yeni" className="modern-button block text-center">Yeni Araç Ekle</Link>
+          <Link href="/arac/araclar" className="modern-button-secondary block text-center">Araç Listesi</Link>
+          <Link href="/arac/kiralamalar/yeni" className="modern-button-secondary block text-center">Yeni Kiralama</Link>
+          
+        </div>
+      </div>
+
+      {/* Araç Kiralamaları (tam liste) */}
+      <div className="modern-card p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Araç Kiralamaları</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-slate-50 dark:bg-slate-800">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Müşteri</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Araç</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Tarihler</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Gün</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Tutar</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Durum</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">İşlemler</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white dark:bg-slate-900 divide-y divide-slate-200 dark:divide-slate-700">
+              {(() => {
+                // Tek kiralama mantığına geçiş: sadece rentals göster
+                return recentRentals.length > 0 ? recentRentals.map((row) => (
+                  <tr key={row.id} className="hover:bg-slate-50 dark:hover:bg-slate-800">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-slate-900 dark:text-slate-100">{row.customerName}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-slate-900 dark:text-slate-100">{row.vehicle.brand} {row.vehicle.model}</div>
+                      <div className="text-sm text-slate-500 dark:text-slate-400">{row.vehicle.plate}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-100">{formatDate(row.startDate)} - {formatDate(row.endDate)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-100">{row.days} gün</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-100">{formatCurrency(row.totalAmount)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(row.status)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <a href={`/api/arac/kiralamalar/${row.id}/voucher`} className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 mr-3" download>
+                        Voucher (PDF)
+                      </a>
+                      <Link href={`/arac/kiralamalar/${row.id}/duzenle`} className="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300">Düzenle</Link>
+                    </td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-8 text-center text-slate-500 dark:text-slate-400">Henüz işlem bulunmuyor</td>
+                  </tr>
+                );
+              })()}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

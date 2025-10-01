@@ -36,6 +36,8 @@ model Tenant {
   vehicles  Vehicle[]
   vehicleRentals VehicleRental[]
   vehicleBookings VehicleBooking[]
+  // Şoför modülü
+  drivers      Driver[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -174,16 +176,37 @@ model TourBooking {
   tenant      Tenant   @relation(fields: [tenantId], references: [id])
   tourId      String
   tour        Tour     @relation(fields: [tourId], references: [id])
+  driverId    String?
+  driver      Driver? @relation(fields: [driverId], references: [id])
   customerName String
   customerPhone String
   customerEmail String?
   startDate   DateTime
-  participants Int
+  participants Int @default(1)
   totalAmount Int
+  driverCommission Int? // şoför komisyonu (kuruş)
+  driverPaid Boolean  @default(false) // şoföre ödeme yapıldı mı
+  paymentMethod String? // ödeme yöntemi (cash, card, transfer)
   status      String   @default("pending") // pending, confirmed, cancelled, completed
   notes       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// Şoför Modülü
+model Driver {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  name        String   // şoför adı
+  phone       String   // telefon numarası
+  commission  Int      // komisyon yüzdesi (0-100)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  transferBookings TransferBooking[]
+  tourBookings     TourBooking[]
 }
 
 // Transfer Modülü
@@ -204,12 +227,18 @@ model Transfer {
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  
+  bookings    TransferBooking[]
 }
 
 model TransferBooking {
   id          String   @id @default(cuid())
   tenantId    String
   tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  transferId  String?
+  transfer    Transfer? @relation(fields: [transferId], references: [id])
+  driverId    String?
+  driver      Driver? @relation(fields: [driverId], references: [id])
   customerName String
   customerPhone String
   customerEmail String?
@@ -217,8 +246,13 @@ model TransferBooking {
   pickupTime  String
   pickupLocation String
   dropoffLocation String
-  passengers  Int
+  passengerCount Int @default(1)
+  passengers  Json @default("[]")
   totalAmount Int
+  currency   String   @default("TRY")
+  driverCommission Int? // şoför komisyonu (kuruş)
+  driverPaid Boolean  @default(false) // şoföre ödeme yapıldı mı
+  paymentMethod String? // ödeme yöntemi (cash, card, transfer)
   status      String   @default("pending") // pending, confirmed, cancelled, completed
   notes       String?
   createdAt   DateTime @default(now())
