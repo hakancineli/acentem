@@ -52,7 +52,7 @@ export default async function UcakPage() {
   // Aktif uçuşlar
   const activeFlights = await prisma.flight.findMany({
     where: { tenantId, isActive: true },
-    orderBy: { departureTime: "asc" },
+    orderBy: { departure: "asc" },
     take: 3
   });
 
@@ -125,7 +125,7 @@ export default async function UcakPage() {
                       <div className="text-right">
                         <div className="text-lg font-bold text-sky-600 dark:text-sky-400">₺{booking.totalAmount.toLocaleString()}</div>
                         <div className="text-xs text-slate-500">
-                          {booking.flight.departureTime.toLocaleDateString("tr-TR")} {booking.flight.departureTime.toLocaleTimeString("tr-TR", { hour: '2-digit', minute: '2-digit' })}
+                          {booking.flight.departure.toLocaleDateString("tr-TR")} {booking.flight.departure.toLocaleTimeString("tr-TR", { hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </div>
                     </div>
@@ -153,9 +153,9 @@ export default async function UcakPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <h4 className="font-medium text-slate-800 dark:text-slate-200">{flight.airline} {flight.flightNumber}</h4>
-                        <p className="text-xs text-slate-600 dark:text-slate-400">{flight.departure} → {flight.arrival}</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-400">{flight.from} → {flight.to}</p>
                         <p className="text-xs text-slate-500">
-                          {flight.departureTime.toLocaleDateString("tr-TR")} {flight.departureTime.toLocaleTimeString("tr-TR", { hour: '2-digit', minute: '2-digit' })}
+                          {flight.departure.toLocaleDateString("tr-TR")} {flight.departure.toLocaleTimeString("tr-TR", { hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
                       <div className="text-right">

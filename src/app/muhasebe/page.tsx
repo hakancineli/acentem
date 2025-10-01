@@ -57,10 +57,10 @@ export default async function MuhasebePage() {
       }),
       prisma.healthPolicy.aggregate({
         where: { tenantId, status: "active" },
-        _sum: { premium: true }
+        _sum: { totalAmount: true }
       })
     ]).then(results => {
-      const total = results.reduce((sum, result) => sum + (result._sum.totalAmount || result._sum.premium || 0), 0);
+      const total = results.reduce((sum, result) => sum + (result._sum.totalAmount || result._sum.totalAmount || 0), 0);
       return total;
     }),
     
@@ -90,14 +90,14 @@ export default async function MuhasebePage() {
       }),
       prisma.healthPolicy.aggregate({
         where: { tenantId, status: "active" },
-        _sum: { premium: true }
+        _sum: { totalAmount: true }
       }),
       prisma.collection.aggregate({
         where: { tenantId },
         _sum: { amount: true }
       })
     ]).then(results => {
-      const revenue = results.slice(0, 5).reduce((sum, result) => sum + (result._sum.totalAmount || result._sum.premium || 0), 0);
+      const revenue = results.slice(0, 5).reduce((sum, result) => sum + (result._sum.totalAmount || result._sum.totalAmount || 0), 0);
       const expenses = results[5]._sum.amount || 0;
       return revenue - expenses;
     }),
@@ -152,10 +152,10 @@ export default async function MuhasebePage() {
             gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
           }
         },
-        _sum: { premium: true }
+        _sum: { totalAmount: true }
       })
     ]).then(results => {
-      return results.reduce((sum, result) => sum + (result._sum.totalAmount || result._sum.premium || 0), 0);
+      return results.reduce((sum, result) => sum + (result._sum.totalAmount || result._sum.totalAmount || 0), 0);
     })
   ]);
 

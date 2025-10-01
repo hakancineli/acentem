@@ -44,7 +44,6 @@ export default async function TransferPage() {
   // Son rezervasyonlar
   const recentBookings = await prisma.transferBooking.findMany({
     where: { tenantId },
-    include: { transfer: true },
     orderBy: { createdAt: "desc" },
     take: 5
   });
@@ -119,12 +118,12 @@ export default async function TransferPage() {
                             {booking.status === "confirmed" ? "Onaylandı" :
                              booking.status === "pending" ? "Beklemede" : "İptal"}
                           </span>
-                          <span className="text-xs text-slate-500">{booking.transfer.vehicleType}</span>
+                          <span className="text-xs text-slate-500">Transfer Rezervasyonu</span>
                         </div>
                       </div>
                       <div className="text-right">
                         <div className="text-lg font-bold text-purple-600 dark:text-purple-400">₺{booking.totalAmount.toLocaleString()}</div>
-                        <div className="text-xs text-slate-500">{booking.distance} km</div>
+                        <div className="text-xs text-slate-500">{booking.passengers} yolcu</div>
                       </div>
                     </div>
                   </div>

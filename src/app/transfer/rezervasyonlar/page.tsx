@@ -11,7 +11,6 @@ interface RezervasyonlarPageProps {
     sort?: string;
     dir?: string;
     status?: string;
-    transfer?: string;
   };
 }
 
@@ -51,12 +50,10 @@ export default async function RezervasyonlarPage({ searchParams }: Rezervasyonla
   const sort = searchParamsResolved.sort || "createdAt";
   const dir = searchParamsResolved.dir || "desc";
   const status = searchParamsResolved.status || "";
-  const transferId = searchParamsResolved.transfer || "";
 
   // Build where clause
   const where = {
     tenantId,
-    ...(transferId && { transferId }),
     ...(status && { status }),
     ...(q && {
       OR: [
@@ -64,28 +61,19 @@ export default async function RezervasyonlarPage({ searchParams }: Rezervasyonla
         { customerPhone: { contains: q, mode: "insensitive" as const } },
         { pickupLocation: { contains: q, mode: "insensitive" as const } },
         { dropoffLocation: { contains: q, mode: "insensitive" as const } },
-        { transfer: { vehicleType: { contains: q, mode: "insensitive" as const } } },
       ],
     }),
   };
 
   // Get bookings with pagination
-  const [bookings, totalCount, transfers] = await Promise.all([
+  const [bookings, totalCount] = await Promise.all([
     prisma.transferBooking.findMany({
       where,
       orderBy: { [sort]: dir },
       skip: (page - 1) * limit,
       take: limit,
-      include: {
-        transfer: true,
-      },
     }),
     prisma.transferBooking.count({ where }),
-    prisma.transfer.findMany({
-      where: { tenantId },
-      select: { id: true, vehicleType: true },
-      orderBy: { vehicleType: "asc" },
-    }),
   ]);
 
   const totalPages = Math.ceil(totalCount / limit);
@@ -146,14 +134,6 @@ export default async function RezervasyonlarPage({ searchParams }: Rezervasyonla
             />
           </div>
           <div className="flex gap-2">
-            <select name="transfer" defaultValue={transferId} className="modern-input">
-              <option value="">Tüm Araçlar</option>
-              {transfers.map((transfer) => (
-                <option key={transfer.id} value={transfer.id}>
-                  {transfer.vehicleType}
-                </option>
-              ))}
-            </select>
             <select name="status" defaultValue={status} className="modern-input">
               <option value="">Tüm Durumlar</option>
               <option value="pending">Bekleyen</option>
@@ -210,7 +190,7 @@ export default async function RezervasyonlarPage({ searchParams }: Rezervasyonla
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-slate-600 dark:text-slate-400">
                       <div>
-                        <span className="font-medium">Araç:</span> {booking.transfer.vehicleType}
+                        <span className="font-medium">Yolcu Sayısı:</span> {booking.passengers} kişi
                       </div>
                       <div>
                         <span className="font-medium">Pickup:</span> {booking.pickupDate.toLocaleDateString("tr-TR")}
@@ -219,7 +199,7 @@ export default async function RezervasyonlarPage({ searchParams }: Rezervasyonla
                         <span className="font-medium">Telefon:</span> {booking.customerPhone}
                       </div>
                       <div>
-                        <span className="font-medium">Mesafe:</span> {booking.distance ? `${booking.distance} km` : "Belirtilmemiş"}
+                        <span className="font-medium">Durum:</span> {booking.status === "waiting_for_driver" ? "Şoför Bekleniyor" : booking.status}
                       </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-600 dark:text-slate-400 mt-2">
@@ -248,10 +228,10 @@ export default async function RezervasyonlarPage({ searchParams }: Rezervasyonla
                       Düzenle
                     </Link>
                     <Link 
-                      href={`/transfer/araclar/${booking.transferId}`}
+                      href={`/transfer/rezervasyonlar/${booking.id}`}
                       className="modern-button text-sm"
                     >
-                      Araç Detayı
+                      Detay
                     </Link>
                   </div>
                 </div>
@@ -265,9 +245,9 @@ export default async function RezervasyonlarPage({ searchParams }: Rezervasyonla
             </svg>
             <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200 mb-2">Rezervasyon Bulunamadı</h3>
             <p className="text-slate-600 dark:text-slate-400 mb-6">
-              {q || status || transferId ? "Arama kriterlerinize uygun rezervasyon bulunamadı." : "Henüz rezervasyon eklenmemiş."}
+              {q || status ? "Arama kriterlerinize uygun rezervasyon bulunamadı." : "Henüz rezervasyon eklenmemiş."}
             </p>
-            {!q && !status && !transferId && (
+            {!q && !status && (
               <Link href="/transfer/rezervasyonlar/yeni" className="modern-button">
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />

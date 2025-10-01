@@ -20,15 +20,15 @@ export default function YeniRezervasyonPage() {
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [selectedTransfer, setSelectedTransfer] = useState<Transfer | null>(null);
   const [formData, setFormData] = useState({
-    transferId: "",
-    customerName: "",
     customerPhone: "",
     pickupLocation: "",
     dropoffLocation: "",
-    pickupDate: "",
+    pickupDate: new Date().toISOString().slice(0, 16), // Bugünün tarihi
+    passengerCount: 1,
+    passengers: [""], // Yolcu isimleri
     distance: "",
+    currency: "TRY",
     totalAmount: "",
-    status: "pending",
     notes: "",
   });
 
@@ -44,33 +44,34 @@ export default function YeniRezervasyonPage() {
       .catch(error => console.error("Error fetching transfers:", error));
   }, []);
 
-  useEffect(() => {
-    // Update selected transfer when transferId changes
-    if (formData.transferId) {
-      const transfer = transfers.find(t => t.id === formData.transferId);
-      setSelectedTransfer(transfer || null);
-    }
-  }, [formData.transferId, transfers]);
+  // Transfer seçimi kaldırıldı - şoför ataması sonradan yapılacak
 
-  useEffect(() => {
-    // Calculate total price when transfer and distance are selected
-    if (selectedTransfer && formData.distance) {
-      const totalAmount = selectedTransfer.price * parseFloat(formData.distance);
-      setFormData(prev => ({ ...prev, totalAmount: totalAmount.toString() }));
-    }
-  }, [selectedTransfer, formData.distance]);
+  // Fiyat hesaplama kaldırıldı - manuel giriş
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      // API'ye gönderilecek veriyi hazırla
+      const submitData = {
+        customerPhone: formData.customerPhone,
+        pickupLocation: formData.pickupLocation,
+        dropoffLocation: formData.dropoffLocation,
+        pickupDate: formData.pickupDate,
+        passengerCount: formData.passengerCount,
+        passengers: formData.passengers,
+        currency: formData.currency,
+        totalAmount: formData.totalAmount,
+        notes: formData.notes,
+      };
+
       const response = await fetch("/api/transfer/rezervasyonlar", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(submitData),
       });
 
       if (response.ok) {
@@ -95,6 +96,21 @@ export default function YeniRezervasyonPage() {
     }));
   };
 
+  const handlePassengerCountChange = (count: number) => {
+    setFormData(prev => ({
+      ...prev,
+      passengerCount: count,
+      passengers: Array(count).fill("").map((_, index) => prev.passengers[index] || "")
+    }));
+  };
+
+  const handlePassengerNameChange = (index: number, name: string) => {
+    setFormData(prev => ({
+      ...prev,
+      passengers: prev.passengers.map((passenger, i) => i === index ? name : passenger)
+    }));
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -116,40 +132,21 @@ export default function YeniRezervasyonPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label htmlFor="transferId" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Araç *
+              <label htmlFor="passengerCount" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Yolcu Sayısı *
               </label>
               <select
-                id="transferId"
-                name="transferId"
-                value={formData.transferId}
-                onChange={handleChange}
+                id="passengerCount"
+                name="passengerCount"
+                value={formData.passengerCount}
+                onChange={(e) => handlePassengerCountChange(parseInt(e.target.value))}
                 required
                 className="modern-input w-full"
               >
-                <option value="">Araç seçin...</option>
-                {transfers.map((transfer) => (
-                  <option key={transfer.id} value={transfer.id}>
-                    {transfer.name} - {transfer.vehicleType} ({transfer.capacity} kişi) - ₺{transfer.price}
-                  </option>
+                {[1,2,3,4,5,6,7,8,9,10].map(num => (
+                  <option key={num} value={num}>{num} kişi</option>
                 ))}
               </select>
-            </div>
-
-            <div>
-              <label htmlFor="customerName" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Müşteri Adı *
-              </label>
-              <input
-                type="text"
-                id="customerName"
-                name="customerName"
-                value={formData.customerName}
-                onChange={handleChange}
-                required
-                className="modern-input w-full"
-                placeholder="Örn: Ahmet Yılmaz"
-              />
             </div>
 
             <div>
@@ -168,22 +165,6 @@ export default function YeniRezervasyonPage() {
               />
             </div>
 
-            <div>
-              <label htmlFor="status" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Durum
-              </label>
-              <select
-                id="status"
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                className="modern-input w-full"
-              >
-                <option value="pending">Beklemede</option>
-                <option value="confirmed">Onaylandı</option>
-                <option value="cancelled">İptal Edildi</option>
-              </select>
-            </div>
 
             <div>
               <label htmlFor="pickupLocation" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
@@ -255,8 +236,26 @@ export default function YeniRezervasyonPage() {
             </div>
 
             <div>
+              <label htmlFor="currency" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Para Birimi *
+              </label>
+              <select
+                id="currency"
+                name="currency"
+                value={formData.currency}
+                onChange={handleChange}
+                required
+                className="modern-input w-full"
+              >
+                <option value="TRY">₺ Türk Lirası</option>
+                <option value="USD">$ Amerikan Doları</option>
+                <option value="EUR">€ Euro</option>
+              </select>
+            </div>
+
+            <div>
               <label htmlFor="totalAmount" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Toplam Fiyat (₺) *
+                Toplam Fiyat *
               </label>
               <input
                 type="number"
@@ -268,8 +267,33 @@ export default function YeniRezervasyonPage() {
                 min="0"
                 step="0.01"
                 className="modern-input w-full"
-                placeholder="Otomatik hesaplanır"
+                placeholder="Fiyat girin"
               />
+            </div>
+          </div>
+
+          {/* Yolcu İsimleri */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              Yolcu İsimleri *
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {formData.passengers.map((passenger, index) => (
+                <div key={index}>
+                  <label htmlFor={`passenger-${index}`} className="block text-sm text-slate-600 dark:text-slate-400 mb-1">
+                    Yolcu {index + 1}
+                  </label>
+                  <input
+                    type="text"
+                    id={`passenger-${index}`}
+                    value={passenger}
+                    onChange={(e) => handlePassengerNameChange(index, e.target.value)}
+                    required
+                    className="modern-input w-full"
+                    placeholder={`Yolcu ${index + 1} adı`}
+                  />
+                </div>
+              ))}
             </div>
           </div>
 

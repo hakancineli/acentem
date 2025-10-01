@@ -35,11 +35,6 @@ export async function GET(request: NextRequest) {
         orderBy: { [sort]: dir },
         skip: (page - 1) * limit,
         take: limit,
-        include: {
-          _count: {
-            select: { bookings: true },
-          },
-        },
       }),
       prisma.transfer.count({ where }),
     ]);
@@ -55,7 +50,8 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Araclar API error:", error);
-    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
+    console.error("Error details:", JSON.stringify(error, null, 2));
+    return NextResponse.json({ error: "Sunucu hatası", details: error instanceof Error ? error.message : "Unknown error" }, { status: 500 });
   }
 }
 
@@ -69,31 +65,24 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { 
-      from, 
-      to, 
-      vehicleType, 
-      priceType,
-      fixedPrice,
-      pricePerKm, 
-      distance, 
-      duration, 
-      description, 
-      isActive = true 
+    const {
+      plateNumber,
+      vehicleType,
+      brand,
+      model,
+      year,
+      color,
+      capacity,
+      fuelType,
+      driverName,
+      driverPhone,
+      driverLicense,
+      isActive = true,
+      notes
     } = body;
 
-    if (!from || !to || !vehicleType || !priceType) {
+    if (!plateNumber || !vehicleType || !brand || !model || !driverName || !driverPhone) {
       return NextResponse.json({ error: "Gerekli alanlar eksik" }, { status: 400 });
-    }
-
-    // Fiyat hesaplama
-    let price = 0;
-    if (priceType === "fixed" && fixedPrice) {
-      price = parseInt(fixedPrice);
-    } else if (priceType === "perKm" && pricePerKm) {
-      price = parseInt(pricePerKm);
-    } else {
-      return NextResponse.json({ error: "Fiyat bilgisi eksik" }, { status: 400 });
     }
 
     // Araç tipinden kapasite çıkarma
@@ -112,16 +101,16 @@ export async function POST(request: NextRequest) {
     const transfer = await prisma.transfer.create({
       data: {
         tenantId,
-        name: `${from} - ${to}`, // Otomatik isim oluştur
-        type: "airport", // Varsayılan tip
-        from,
-        to,
+        name: `${brand} ${model} - ${plateNumber}`, // Araç bilgileri ile isim oluştur
+        type: "company_vehicle", // Şirket aracı tipi
+        from: "Şirket Filosu", // Varsayılan
+        to: "Şirket Filosu", // Varsayılan
         vehicleType,
-        capacity: getCapacityFromVehicleType(vehicleType),
-        price,
-        distance: distance ? parseInt(distance) : null,
-        duration: duration ? parseInt(duration) : null,
-        description,
+        capacity: capacity ? parseInt(capacity) : getCapacityFromVehicleType(vehicleType),
+        price: 0, // Fiyat rezervasyon sırasında belirlenir
+        distance: null,
+        duration: null,
+        description: `Plaka: ${plateNumber}\nMarka: ${brand}\nModel: ${model}\nYıl: ${year || 'Belirtilmemiş'}\nRenk: ${color || 'Belirtilmemiş'}\nYakıt: ${fuelType || 'Belirtilmemiş'}\nŞoför: ${driverName}\nTelefon: ${driverPhone}\nEhliyet: ${driverLicense || 'Belirtilmemiş'}\nNotlar: ${notes || 'Yok'}`,
         isActive,
       },
     });

@@ -18,12 +18,10 @@ export async function GET(request: NextRequest) {
     const sort = searchParams.get("sort") || "createdAt";
     const dir = searchParams.get("dir") || "desc";
     const status = searchParams.get("status") || "";
-    const transferId = searchParams.get("transfer") || "";
 
     // Build where clause
     const where = {
       tenantId,
-      ...(transferId && { transferId }),
       ...(status && { status }),
       ...(q && {
         OR: [
@@ -31,7 +29,6 @@ export async function GET(request: NextRequest) {
           { customerPhone: { contains: q, mode: "insensitive" as const } },
           { pickupLocation: { contains: q, mode: "insensitive" as const } },
           { dropoffLocation: { contains: q, mode: "insensitive" as const } },
-          { transfer: { vehicleType: { contains: q, mode: "insensitive" as const } } },
         ],
       }),
     };
@@ -43,9 +40,6 @@ export async function GET(request: NextRequest) {
         orderBy: { [sort]: dir },
         skip: (page - 1) * limit,
         take: limit,
-        include: {
-          transfer: true,
-        },
       }),
       prisma.transferBooking.count({ where }),
     ]);
@@ -76,54 +70,45 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const { 
-      transferId, 
-      customerName, 
       customerPhone, 
       pickupLocation, 
       dropoffLocation, 
       pickupDate, 
+      passengerCount,
+      passengers,
       distance, 
+      currency,
       totalAmount, 
-      status = "pending",
       notes 
     } = body;
 
-    if (!transferId || !customerName || !customerPhone || !pickupLocation || !dropoffLocation || !pickupDate || !totalAmount) {
+    if (!customerPhone || !pickupLocation || !dropoffLocation || !pickupDate || !passengerCount || !passengers || !totalAmount || !currency) {
       return NextResponse.json({ error: "Gerekli alanlar eksik" }, { status: 400 });
     }
 
-    // Check if transfer exists and belongs to tenant
-    const transfer = await prisma.transfer.findFirst({
-      where: {
-        id: transferId,
-        tenantId,
-      },
-    });
-
-    if (!transfer) {
-      return NextResponse.json({ error: "Araç bulunamadı" }, { status: 404 });
-    }
+    // Transfer ataması sonradan yapılacak
 
     const booking = await prisma.transferBooking.create({
       data: {
         tenantId,
-        transferId,
-        customerName,
+        customerName: passengers.join(", "), // Yolcu isimlerini birleştir
         customerPhone,
         pickupLocation,
         dropoffLocation,
         pickupDate: new Date(pickupDate),
-        distance: distance ? parseInt(distance) : null,
+        pickupTime: new Date(pickupDate).toLocaleTimeString("tr-TR", { hour: '2-digit', minute: '2-digit' }),
+        passengers: passengerCount,
         totalAmount: parseInt(totalAmount),
-        status,
-        notes,
+        status: "waiting_for_driver", // Şoför ataması bekleniyor
+        notes: `${notes}\nPara Birimi: ${currency}\nYolcu Sayısı: ${passengerCount}`,
       },
     });
 
     return NextResponse.json(booking, { status: 201 });
   } catch (error) {
     console.error("Booking create error:", error);
-    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
+    console.error("Error details:", JSON.stringify(error, null, 2));
+    return NextResponse.json({ error: "Sunucu hatası", details: error instanceof Error ? error.message : "Unknown error" }, { status: 500 });
   }
 }
 
