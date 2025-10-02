@@ -10,7 +10,10 @@ export default function YeniOtelPage() {
   const [formData, setFormData] = useState({
     name: "",
     location: "",
-    starRating: "",
+    city: "",
+    country: "Türkiye",
+    stars: "",
+    description: "",
     amenities: [] as string[],
     isActive: true,
   });
@@ -44,7 +47,7 @@ export default function YeniOtelPage() {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -117,18 +120,50 @@ export default function YeniOtelPage() {
                 onChange={handleChange}
                 required
                 className="modern-input w-full"
-                placeholder="Örn: Antalya, Türkiye"
+                placeholder="Örn: Belek, Antalya"
               />
             </div>
 
             <div>
-              <label htmlFor="starRating" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              <label htmlFor="city" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Şehir *
+              </label>
+              <input
+                type="text"
+                id="city"
+                name="city"
+                value={formData.city}
+                onChange={handleChange}
+                required
+                className="modern-input w-full"
+                placeholder="Örn: Antalya"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="country" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Ülke *
+              </label>
+              <input
+                type="text"
+                id="country"
+                name="country"
+                value={formData.country}
+                onChange={handleChange}
+                required
+                className="modern-input w-full"
+                placeholder="Örn: Türkiye"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="stars" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Yıldız Sayısı *
               </label>
               <select
-                id="starRating"
-                name="starRating"
-                value={formData.starRating}
+                id="stars"
+                name="stars"
+                value={formData.stars}
                 onChange={handleChange}
                 required
                 className="modern-input w-full"
@@ -142,7 +177,22 @@ export default function YeniOtelPage() {
               </select>
             </div>
 
-            <div>
+            <div className="md:col-span-2">
+              <label htmlFor="description" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Açıklama
+              </label>
+              <textarea
+                id="description"
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                rows={3}
+                className="modern-input w-full"
+                placeholder="Otel hakkında detaylı bilgi..."
+              />
+            </div>
+
+            <div className="md:col-span-2">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Olanaklar
               </label>

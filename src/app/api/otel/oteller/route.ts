@@ -70,9 +70,9 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, location, starRating, amenities, isActive = true } = body;
+    const { name, location, city, country, stars, description, amenities, isActive = true } = body;
 
-    if (!name || !location || !starRating) {
+    if (!name || !location || !stars) {
       return NextResponse.json({ error: "Gerekli alanlar eksik" }, { status: 400 });
     }
 
@@ -81,7 +81,10 @@ export async function POST(request: NextRequest) {
         tenantId,
         name,
         location,
-        starRating: parseInt(starRating),
+        city: city || location,
+        country: country || "Türkiye",
+        stars: parseInt(stars),
+        description,
         amenities: amenities ? JSON.stringify(amenities) : null,
         isActive,
       },
