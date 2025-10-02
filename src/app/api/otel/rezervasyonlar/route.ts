@@ -27,8 +27,9 @@ export async function GET(request: NextRequest) {
       ...(status && { status }),
       ...(q && {
         OR: [
-          { guestName: { contains: q, mode: "insensitive" as const } },
-          { guestEmail: { contains: q, mode: "insensitive" as const } },
+          { customerName: { contains: q, mode: "insensitive" as const } },
+          { customerPhone: { contains: q, mode: "insensitive" as const } },
+          { customerEmail: { contains: q, mode: "insensitive" as const } },
           { hotel: { name: { contains: q, mode: "insensitive" as const } } },
         ],
       }),
@@ -75,19 +76,24 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { 
       hotelId, 
-      guestName, 
-      guestEmail, 
+      customerName, 
+      customerPhone,
+      customerEmail, 
       checkIn, 
       checkOut, 
       rooms, 
       adults, 
       children, 
-      totalAmount, 
+      totalAmount,
+      paymentMethod,
+      collectionMethod,
+      paymentTiming,
+      depositAmount,
       status = "pending",
       notes 
     } = body;
 
-    if (!hotelId || !guestName || !guestEmail || !checkIn || !checkOut || !rooms || !adults || !totalAmount) {
+    if (!hotelId || !customerName || !customerPhone || !checkIn || !checkOut || !rooms || !adults || !totalAmount) {
       return NextResponse.json({ error: "Gerekli alanlar eksik" }, { status: 400 });
     }
 
@@ -103,18 +109,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Otel bulunamadı" }, { status: 404 });
     }
 
+    // Kapora hesaplama
+    const calculatedDepositAmount = paymentTiming === "kapora" && depositAmount ? parseInt(depositAmount) : parseInt(totalAmount);
+    const calculatedRemainingAmount = paymentTiming === "kapora" && depositAmount ? parseInt(totalAmount) - parseInt(depositAmount) : 0;
+
+    const nights = Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60 * 60 * 24));
+
     const reservation = await prisma.hotelReservation.create({
       data: {
         tenantId,
         hotelId,
-        guestName,
-        guestEmail,
+        customerName,
+        customerPhone,
+        customerEmail,
         checkIn: new Date(checkIn),
         checkOut: new Date(checkOut),
+        nights,
         rooms: parseInt(rooms),
         adults: parseInt(adults),
         children: parseInt(children) || 0,
         totalAmount: parseInt(totalAmount),
+        paymentMethod,
+        collectionMethod,
+        paymentTiming,
+        depositAmount: calculatedDepositAmount,
+        remainingAmount: calculatedRemainingAmount,
         status,
         notes,
       },
@@ -126,13 +145,13 @@ export async function POST(request: NextRequest) {
         tenantId,
         type: "income",
         category: "otel",
-        amount: parseInt(totalAmount),
-        description: `Otel rezervasyon ücreti (${guestName})`,
-        source: guestName || "Müşteri",
+        amount: calculatedDepositAmount, // İlk aşamada kapora veya tam tutar
+        description: `Otel rezervasyon ücreti (${customerName})`,
+        source: customerName || "Müşteri",
         reference: reservation.id,
         date: new Date(),
         status: "pending",
-        notes: `Otel: ${hotel.name}, ${rooms} oda, ${adults} yetişkin, ${children} çocuk`,
+        notes: `Otel: ${hotel.name}, ${rooms} oda, ${adults} yetişkin, ${children || 0} çocuk, ${nights} gece. Ödeme: ${paymentMethod || 'Belirtilmedi'}, Tahsilat: ${collectionMethod || 'Belirtilmedi'}`,
       },
     });
 

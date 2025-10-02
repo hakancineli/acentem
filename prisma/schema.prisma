@@ -157,6 +157,11 @@ model HotelReservation {
   adults      Int
   children    Int
   totalAmount Int
+  paymentMethod String? // nakit, havale, kredi_karti
+  collectionMethod String? // ofiste, otelde, online, kapida
+  paymentTiming String? // pesin, kapora
+  depositAmount Int? // kapora tutarı (kuruş)
+  remainingAmount Int? // kalan tutar (kuruş)
   status      String   @default("pending") // pending, confirmed, cancelled, completed
   notes       String?
   createdAt   DateTime @default(now())

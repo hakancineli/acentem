@@ -18,14 +18,19 @@ export default function YeniRezervasyonPage() {
   const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
   const [formData, setFormData] = useState({
     hotelId: "",
-    guestName: "",
-    guestEmail: "",
+    customerName: "",
+    customerPhone: "",
+    customerEmail: "",
     checkIn: "",
     checkOut: "",
     rooms: "",
     adults: "",
     children: "",
     totalAmount: "",
+    paymentMethod: "",
+    collectionMethod: "",
+    paymentTiming: "",
+    depositAmount: "",
     status: "pending",
     notes: "",
   });
@@ -140,14 +145,14 @@ export default function YeniRezervasyonPage() {
             </div>
 
             <div>
-              <label htmlFor="guestName" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Misafir Adı *
+              <label htmlFor="customerName" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Müşteri Adı *
               </label>
               <input
                 type="text"
-                id="guestName"
-                name="guestName"
-                value={formData.guestName}
+                id="customerName"
+                name="customerName"
+                value={formData.customerName}
                 onChange={handleChange}
                 required
                 className="modern-input w-full"
@@ -156,16 +161,31 @@ export default function YeniRezervasyonPage() {
             </div>
 
             <div>
-              <label htmlFor="guestEmail" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Misafir Email *
+              <label htmlFor="customerPhone" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Müşteri Telefon *
+              </label>
+              <input
+                type="tel"
+                id="customerPhone"
+                name="customerPhone"
+                value={formData.customerPhone}
+                onChange={handleChange}
+                required
+                className="modern-input w-full"
+                placeholder="Örn: 0532 123 45 67"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="customerEmail" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Müşteri Email
               </label>
               <input
                 type="email"
-                id="guestEmail"
-                name="guestEmail"
-                value={formData.guestEmail}
+                id="customerEmail"
+                name="customerEmail"
+                value={formData.customerEmail}
                 onChange={handleChange}
-                required
                 className="modern-input w-full"
                 placeholder="Örn: ahmet@example.com"
               />
@@ -289,6 +309,94 @@ export default function YeniRezervasyonPage() {
                 placeholder="Örn: 2500"
               />
             </div>
+          </div>
+
+          {/* Ödeme Detayları */}
+          <div className="border-t pt-6">
+            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">Ödeme Detayları</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label htmlFor="paymentMethod" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Ödeme Yöntemi *
+                </label>
+                <select
+                  id="paymentMethod"
+                  name="paymentMethod"
+                  value={formData.paymentMethod}
+                  onChange={handleChange}
+                  required
+                  className="modern-input w-full"
+                >
+                  <option value="">Seçiniz</option>
+                  <option value="nakit">Nakit</option>
+                  <option value="havale">Havale/EFT</option>
+                  <option value="kredi_karti">Kredi Kartı</option>
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="collectionMethod" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Tahsilat Yeri *
+                </label>
+                <select
+                  id="collectionMethod"
+                  name="collectionMethod"
+                  value={formData.collectionMethod}
+                  onChange={handleChange}
+                  required
+                  className="modern-input w-full"
+                >
+                  <option value="">Seçiniz</option>
+                  <option value="ofiste">Ofiste</option>
+                  <option value="otelde">Otelde</option>
+                  <option value="online">Online</option>
+                  <option value="kapida">Kapıda</option>
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="paymentTiming" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Ödeme Şekli *
+                </label>
+                <select
+                  id="paymentTiming"
+                  name="paymentTiming"
+                  value={formData.paymentTiming}
+                  onChange={handleChange}
+                  required
+                  className="modern-input w-full"
+                >
+                  <option value="">Seçiniz</option>
+                  <option value="pesin">Peşin</option>
+                  <option value="kapora">Kapora</option>
+                </select>
+              </div>
+            </div>
+
+            {formData.paymentTiming === "kapora" && (
+              <div className="mt-4">
+                <label htmlFor="depositAmount" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Kapora Tutarı (₺) *
+                </label>
+                <input
+                  type="number"
+                  id="depositAmount"
+                  name="depositAmount"
+                  value={formData.depositAmount}
+                  onChange={handleChange}
+                  required={formData.paymentTiming === "kapora"}
+                  min="0"
+                  max={formData.totalAmount}
+                  className="modern-input w-full md:w-1/3"
+                  placeholder="Örn: 500"
+                />
+                {formData.depositAmount && formData.totalAmount && (
+                  <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                    Kalan tutar: ₺{(parseInt(formData.totalAmount) - parseInt(formData.depositAmount)).toLocaleString()}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           <div>

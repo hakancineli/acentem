@@ -51,14 +51,19 @@ export async function PUT(
 
     const body = await request.json();
     const { 
-      guestName, 
-      guestEmail, 
+      customerName, 
+      customerPhone,
+      customerEmail, 
       checkIn, 
       checkOut, 
       rooms, 
       adults, 
       children, 
-      totalAmount, 
+      totalAmount,
+      paymentMethod,
+      collectionMethod,
+      paymentTiming,
+      depositAmount,
       status, 
       notes 
     } = body;
@@ -80,17 +85,30 @@ export async function PUT(
       return NextResponse.json({ error: "Rezervasyon bulunamadı" }, { status: 404 });
     }
 
+    // Kapora hesaplama
+    const calculatedDepositAmount = paymentTiming === "kapora" && depositAmount ? parseInt(depositAmount) : (totalAmount ? parseInt(totalAmount) : existingReservation.totalAmount);
+    const calculatedRemainingAmount = paymentTiming === "kapora" && depositAmount && totalAmount ? parseInt(totalAmount) - parseInt(depositAmount) : 0;
+    
+    const nights = checkIn && checkOut ? Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60 * 60 * 24)) : existingReservation.nights;
+
     const reservation = await prisma.hotelReservation.update({
       where: { id },
       data: {
-        ...(guestName && { guestName }),
-        ...(guestEmail && { guestEmail }),
+        ...(customerName && { customerName }),
+        ...(customerPhone && { customerPhone }),
+        ...(customerEmail && { customerEmail }),
         ...(checkIn && { checkIn: new Date(checkIn) }),
         ...(checkOut && { checkOut: new Date(checkOut) }),
+        ...(nights && { nights }),
         ...(rooms && { rooms: parseInt(rooms) }),
         ...(adults && { adults: parseInt(adults) }),
         ...(children !== undefined && { children: parseInt(children) || 0 }),
         ...(totalAmount && { totalAmount: parseInt(totalAmount) }),
+        ...(paymentMethod && { paymentMethod }),
+        ...(collectionMethod && { collectionMethod }),
+        ...(paymentTiming && { paymentTiming }),
+        ...(paymentTiming && { depositAmount: calculatedDepositAmount }),
+        ...(paymentTiming && { remainingAmount: calculatedRemainingAmount }),
         ...(status && { status }),
         ...(notes !== undefined && { notes }),
       },
@@ -111,10 +129,10 @@ export async function PUT(
           where: { id: existingTx.id },
           data: {
             amount: reservation.totalAmount,
-            description: `Otel rezervasyon ücreti (${reservation.guestName})`,
+            description: `Otel rezervasyon ücreti (${reservation.customerName})`,
             date: new Date(),
             status: "completed",
-            notes: `Otel: ${existingReservation.hotel.name}, ${reservation.rooms} oda, ${reservation.adults} yetişkin, ${reservation.children} çocuk`,
+            notes: `Otel: ${existingReservation.hotel.name}, ${reservation.rooms} oda, ${reservation.adults} yetişkin, ${reservation.children} çocuk, ${reservation.nights} gece. Ödeme: ${reservation.paymentMethod || 'Belirtilmedi'}, Tahsilat: ${reservation.collectionMethod || 'Belirtilmedi'}`,
           },
         });
       } else {
@@ -124,12 +142,12 @@ export async function PUT(
             type: "income",
             category: "otel",
             amount: reservation.totalAmount,
-            description: `Otel rezervasyon ücreti (${reservation.guestName})`,
-            source: reservation.guestName || "Müşteri",
+            description: `Otel rezervasyon ücreti (${reservation.customerName})`,
+            source: reservation.customerName || "Müşteri",
             reference: reservation.id,
             date: new Date(),
             status: "completed",
-            notes: `Otel: ${existingReservation.hotel.name}, ${reservation.rooms} oda, ${reservation.adults} yetişkin, ${reservation.children} çocuk`,
+            notes: `Otel: ${existingReservation.hotel.name}, ${reservation.rooms} oda, ${reservation.adults} yetişkin, ${reservation.children} çocuk, ${reservation.nights} gece. Ödeme: ${reservation.paymentMethod || 'Belirtilmedi'}, Tahsilat: ${reservation.collectionMethod || 'Belirtilmedi'}`,
           },
         });
       }
