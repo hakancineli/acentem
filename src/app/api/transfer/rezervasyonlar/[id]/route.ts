@@ -27,7 +27,8 @@ export async function GET(
       return NextResponse.json({ error: "Rezervasyon bulunamadı" }, { status: 404 });
     }
 
-    return NextResponse.json(booking);
+    // UI bu endpointten { booking } şeklinde bir obje bekliyor
+    return NextResponse.json({ booking });
   } catch (error) {
     console.error("Booking get error:", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
