@@ -68,6 +68,7 @@ export default function OtelRezervasyonDetayPage({ params }: { params: Promise<{
       } finally {
         setLoading(false);
       }
+      
     })();
   }, [params]);
 

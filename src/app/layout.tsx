@@ -96,12 +96,14 @@ export default async function RootLayout({
                   Dashboard
                 </NavLink>
               )}
-              <NavLink href="/login">
-                <svg className="module-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                </svg>
-                Giriş
-              </NavLink>
+              {!isAuthenticated && (
+                <NavLink href="/login">
+                  <svg className="module-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                  </svg>
+                  Giriş
+                </NavLink>
+              )}
               {role === "admin" && (
                 <NavLink href="/admin">
                   <svg className="module-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -120,6 +122,12 @@ export default async function RootLayout({
                 </NavLink>
               )}
               <div className="border-t border-slate-200 dark:border-slate-700 my-4"></div>
+              <NavLink href="/rezervasyonlar">
+                <svg className="module-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h18M3 12h18M3 17h18" />
+                </svg>
+                Tüm Rezervasyonlar
+              </NavLink>
               {moduleVisibility.otel && (
                 <NavLink href="/otel">
                   <svg className="module-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
