@@ -38,6 +38,17 @@ model Tenant {
   vehicleBookings VehicleBooking[]
   // Şoför modülü
   drivers      Driver[]
+  // Vip Yat modülü
+  yachts       Yacht[]
+  yachtRentals YachtRental[]
+  yachtBookings YachtBooking[]
+  // Cruise tekne modülü
+  cruises      Cruise[]
+  cruiseBookings CruiseBooking[]
+  // Emlak modülü
+  properties   Property[]
+  propertyRentals PropertyRental[]
+  propertySales PropertySale[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -76,6 +87,9 @@ enum ModuleKey {
   reports
   users
   arac
+  vip_yat
+  cruise
+  emlak
 }
 
 model Policy {
@@ -429,6 +443,194 @@ model VehicleBooking {
   notes       String?  // notlar
   pickupLocation String? // teslim yeri
   returnLocation String? // iade yeri
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Vip Yat Modülü
+model Yacht {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  name        String   // yat adı
+  type        String   // tip (motor, yelken, katamaran)
+  length      Float    // uzunluk (metre)
+  width       Float    // genişlik (metre)
+  capacity    Int      // kapasite (kişi sayısı)
+  cabins      Int      // kabin sayısı
+  crew        Int      // mürettebat sayısı
+  year        Int      // yapım yılı
+  location    String   // konum
+  port        String   // liman
+  dailyRate   Int      // günlük kiralama ücreti (kuruş cinsinden)
+  weeklyRate  Int?     // haftalık kiralama ücreti
+  monthlyRate Int?     // aylık kiralama ücreti
+  deposit     Int?     // depozito miktarı
+  features    String?  // özellikler (klima, jacuzzi, su sporları vb.)
+  images      String?  // yat fotoğrafları (JSON array)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  rentals    YachtRental[]
+  bookings   YachtBooking[]
+}
+
+model YachtRental {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  yachtId     String
+  yacht       Yacht    @relation(fields: [yachtId], references: [id])
+  customerName String  // müşteri adı
+  customerPhone String // müşteri telefonu
+  customerEmail String? // müşteri emaili
+  startDate   DateTime // kiralama başlangıç tarihi
+  endDate     DateTime // kiralama bitiş tarihi
+  days        Int      // kiralama gün sayısı
+  dailyRate   Int      // günlük ücret
+  totalAmount Int      // toplam tutar
+  deposit     Int?     // depozito
+  status      String   @default("active") // active, completed, cancelled, overdue
+  notes       String?  // notlar
+  pickupLocation String? // teslim yeri
+  returnLocation String? // iade yeri
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model YachtBooking {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  yachtId     String
+  yacht       Yacht    @relation(fields: [yachtId], references: [id])
+  customerName String  // müşteri adı
+  customerPhone String // müşteri telefonu
+  customerEmail String? // müşteri emaili
+  startDate   DateTime // rezervasyon başlangıç tarihi
+  endDate     DateTime // rezervasyon bitiş tarihi
+  days        Int      // rezervasyon gün sayısı
+  dailyRate   Int      // günlük ücret
+  totalAmount Int    // toplam tutar
+  status      String   @default("pending") // pending, confirmed, cancelled, completed
+  notes       String?  // notlar
+  pickupLocation String? // teslim yeri
+  returnLocation String? // iade yeri
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Cruise tekne Modülü
+model Cruise {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  name        String   // cruise adı
+  route       String   // güzergah
+  duration    Int      // süre (gün)
+  capacity    Int      // kapasite (kişi sayısı)
+  price       Int      // fiyat (kuruş cinsinden)
+  description String?  // açıklama
+  itinerary   String?  // güzergah detayları
+  includes    String?  // dahil olanlar
+  excludes    String?  // dahil olmayanlar
+  images      String?  // cruise fotoğrafları (JSON array)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  bookings   CruiseBooking[]
+}
+
+model CruiseBooking {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  cruiseId    String
+  cruise      Cruise   @relation(fields: [cruiseId], references: [id])
+  customerName String
+  customerPhone String
+  customerEmail String?
+  startDate   DateTime
+  participants Int @default(1)
+  totalAmount Int
+  status      String   @default("pending") // pending, confirmed, cancelled, completed
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Emlak Modülü
+model Property {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  title       String   // başlık
+  type        String   // tip (daire, villa, ofis, dükkan vb.)
+  location    String   // konum
+  city        String   // şehir
+  district    String   // ilçe
+  neighborhood String  // mahalle
+  address     String   // adres
+  rooms       Int      // oda sayısı
+  bathrooms   Int      // banyo sayısı
+  area        Float    // alan (m²)
+  floor       Int?     // kat
+  buildingAge Int?     // bina yaşı
+  heating     String?  // ısıtma sistemi
+  parking     Boolean  @default(false) // otopark
+  balcony     Boolean  @default(false) // balkon
+  elevator    Boolean  @default(false) // asansör
+  furnished   Boolean  @default(false) // eşyalı
+  rentPrice   Int?     // kira fiyatı (kuruş cinsinden)
+  salePrice   Int?     // satış fiyatı (kuruş cinsinden)
+  description String?  // açıklama
+  features    String?  // özellikler (klima, güvenlik, asansör vb.)
+  images      String?  // emlak fotoğrafları (JSON array)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  rentals    PropertyRental[]
+  sales      PropertySale[]
+}
+
+model PropertyRental {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  propertyId  String
+  property    Property @relation(fields: [propertyId], references: [id])
+  customerName String  // müşteri adı
+  customerPhone String // müşteri telefonu
+  customerEmail String? // müşteri emaili
+  startDate   DateTime // kiralama başlangıç tarihi
+  endDate     DateTime // kiralama bitiş tarihi
+  months      Int      // kiralama ay sayısı
+  monthlyRate Int      // aylık ücret
+  totalAmount Int      // toplam tutar
+  deposit     Int?     // depozito
+  status      String   @default("active") // active, completed, cancelled, overdue
+  notes       String?  // notlar
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PropertySale {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  propertyId  String
+  property    Property @relation(fields: [propertyId], references: [id])
+  customerName String  // müşteri adı
+  customerPhone String // müşteri telefonu
+  customerEmail String? // müşteri emaili
+  saleDate    DateTime // satış tarihi
+  salePrice   Int      // satış fiyatı
+  commission  Int?     // komisyon (kuruş cinsinden)
+  status      String   @default("pending") // pending, completed, cancelled
+  notes       String?  // notlar
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

@@ -19,13 +19,16 @@ export default async function DashboardPage() {
 
   const whereTenant = tenantId ? { tenantId } : {};
 
-  const [policyCount, pendingOfferCount, collectionSum, vehicleRevenueAgg, transferRevenueAgg, tourRevenueAgg] = await Promise.all([
+  const [policyCount, pendingOfferCount, collectionSum, vehicleRevenueAgg, transferRevenueAgg, tourRevenueAgg, yachtRevenueAgg, cruiseRevenueAgg, emlakRevenueAgg] = await Promise.all([
     prisma.policy.count({ where: whereTenant as any }),
     prisma.offer.count({ where: { ...(whereTenant as any), status: "Beklemede" } }),
     prisma.collection.aggregate({ where: whereTenant as any, _sum: { amount: true } }),
     prisma.transaction.aggregate({ where: { ...(whereTenant as any), type: "income", category: "arac" }, _sum: { amount: true } }),
     prisma.transaction.aggregate({ where: { ...(whereTenant as any), type: "income", category: "transfer" }, _sum: { amount: true } }),
     prisma.transaction.aggregate({ where: { ...(whereTenant as any), type: "income", category: "tur" }, _sum: { amount: true } }),
+    prisma.transaction.aggregate({ where: { ...(whereTenant as any), type: "income", category: "vip_yat" }, _sum: { amount: true } }),
+    prisma.transaction.aggregate({ where: { ...(whereTenant as any), type: "income", category: "cruise" }, _sum: { amount: true } }),
+    prisma.transaction.aggregate({ where: { ...(whereTenant as any), type: "income", category: "emlak" }, _sum: { amount: true } }),
   ]);
 
   const totalCollections = collectionSum._sum.amount || 0;
@@ -36,14 +39,19 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Dashboard</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-7 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
         <KpiCard title="Toplam Poliçe" value={String(policyCount)} hint="toplam" trend="flat" />
         <KpiCard title="Bekleyen Teklif" value={String(pendingOfferCount)} hint="durum: Beklemede" trend="flat" />
         <KpiCard title="Toplam Tahsilat" value={`₺${totalCollections.toLocaleString("tr-TR")}`} hint="toplam" trend="flat" />
         <KpiCard title="Aktif Tenant" value={tenantName} hint={tenantId ? tenantId.slice(0, 6) + "…" : "—"} trend="flat" />
         <KpiCard title="Araç Geliri" value={`₺${(vehicleRevenueAgg._sum.amount || 0).toLocaleString("tr-TR")}`} hint="voucher gelirleri" trend="up" />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
         <KpiCard title="Transfer Geliri" value={`₺${(transferRevenueAgg._sum.amount || 0).toLocaleString("tr-TR")}`} hint="transfer gelirleri" trend="up" />
         <KpiCard title="Tur Geliri" value={`₺${(tourRevenueAgg._sum.amount || 0).toLocaleString("tr-TR")}`} hint="tur gelirleri" trend="up" />
+        <KpiCard title="Vip Yat Geliri" value={`₺${(yachtRevenueAgg._sum.amount || 0).toLocaleString("tr-TR")}`} hint="yat gelirleri" trend="up" />
+        <KpiCard title="Cruise Geliri" value={`₺${(cruiseRevenueAgg._sum.amount || 0).toLocaleString("tr-TR")}`} hint="cruise gelirleri" trend="up" />
+        <KpiCard title="Emlak Geliri" value={`₺${(emlakRevenueAgg._sum.amount || 0).toLocaleString("tr-TR")}`} hint="emlak gelirleri" trend="up" />
       </div>
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <div className="xl:col-span-2 rounded border p-4">

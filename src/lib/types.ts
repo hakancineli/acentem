@@ -5,7 +5,10 @@ export type ModuleKey =
   | "collections"
   | "reports"
   | "users"
-  | "arac";
+  | "arac"
+  | "vip_yat"
+  | "cruise"
+  | "emlak";
 
 export type Tenant = {
   id: string;
