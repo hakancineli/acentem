@@ -8,8 +8,8 @@ type Row = {
   module: string;
   title: string;
   subtitle?: string;
-  dateFrom: Date;
-  dateTo?: Date | null;
+  dateFrom: Date | string;
+  dateTo?: Date | string | null;
   amount?: number | null;
   currency?: string | null;
   status?: string | null;
@@ -255,7 +255,7 @@ export default async function AllReservationsPage() {
     }
   }
 
-  rows.sort((a, b) => b.dateFrom.getTime() - a.dateFrom.getTime());
+  rows.sort((a, b) => new Date(b.dateFrom as any).getTime() - new Date(a.dateFrom as any).getTime());
 
   const symbol = (c?: string | null) => (c === "USD" ? "$" : c === "EUR" ? "€" : "₺");
 
@@ -280,8 +280,8 @@ export default async function AllReservationsPage() {
                     <div className="font-medium">{r.module} • {r.title}</div>
                     <div className="text-xs text-slate-500">
                       {r.subtitle ? r.subtitle + " • " : ""}
-                      {r.dateFrom.toLocaleDateString("tr-TR")}
-                      {r.dateTo ? ` → ${r.dateTo.toLocaleDateString("tr-TR")}` : ""}
+                      {new Date(r.dateFrom as any).toLocaleDateString("tr-TR")}
+                      {r.dateTo ? ` → ${new Date(r.dateTo as any).toLocaleDateString("tr-TR")}` : ""}
                     </div>
                   </div>
                   <div className="text-right text-sm text-slate-600 dark:text-slate-300">
