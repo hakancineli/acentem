@@ -79,7 +79,7 @@ export default async function AllReservationsPage() {
         amount: r.totalPrice as any,
         currency: "TRY",
         status: r.status,
-        href: `/transfer/rezervasyonlar/${r.id}`,
+        href: `/transfer/rezervasyonlar/${r.id}/duzenle`,
       });
     }
   }
@@ -102,7 +102,7 @@ export default async function AllReservationsPage() {
         amount: r.totalPrice as any,
         currency: "TRY",
         status: r.status,
-        href: `/tur/rezervasyonlar/${r.id}`,
+        href: `/tur/rezervasyonlar/${r.id}/duzenle`,
       });
     }
   }
@@ -171,7 +171,7 @@ export default async function AllReservationsPage() {
         amount: r.price as any,
         currency: "TRY",
         status: r.status,
-        href: `/arac/kiralamalar/${r.id}`,
+        href: `/arac/kiralamalar/${r.id}/duzenle`,
       });
     }
   }
