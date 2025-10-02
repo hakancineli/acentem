@@ -8,7 +8,9 @@ interface Hotel {
   id: string;
   name: string;
   location: string;
-  starRating: number;
+  city: string;
+  country: string;
+  stars: number;
 }
 
 export default function YeniRezervasyonPage() {
@@ -136,12 +138,42 @@ export default function YeniRezervasyonPage() {
                 className="modern-input w-full"
               >
                 <option value="">Otel seçin...</option>
-                {hotels.map((hotel) => (
-                  <option key={hotel.id} value={hotel.id}>
-                    {hotel.name} - {hotel.location} ({hotel.starRating} yıldız)
-                  </option>
+                {/* Group hotels by city */}
+                {Object.entries(
+                  hotels.reduce((acc, hotel) => {
+                    if (!acc[hotel.city]) {
+                      acc[hotel.city] = [];
+                    }
+                    acc[hotel.city].push(hotel);
+                    return acc;
+                  }, {} as Record<string, Hotel[]>)
+                ).map(([city, cityHotels]) => (
+                  <optgroup key={city} label={`${city} (${cityHotels.length} otel)`}>
+                    {cityHotels
+                      .sort((a, b) => b.stars - a.stars) // Sort by stars descending
+                      .map((hotel) => (
+                        <option key={hotel.id} value={hotel.id}>
+                          {"★".repeat(hotel.stars)} {hotel.name} - {hotel.location}
+                        </option>
+                      ))}
+                  </optgroup>
                 ))}
               </select>
+              {selectedHotel && (
+                <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-center gap-2">
+                    <div className="text-yellow-500">
+                      {"★".repeat(selectedHotel.stars)}
+                    </div>
+                    <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                      {selectedHotel.name}
+                    </span>
+                  </div>
+                  <div className="text-xs text-blue-600 dark:text-blue-300 mt-1">
+                    📍 {selectedHotel.location}, {selectedHotel.city}, {selectedHotel.country}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>
