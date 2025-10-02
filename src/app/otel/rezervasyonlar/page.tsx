@@ -193,7 +193,17 @@ export default async function RezervasyonlarPage({ searchParams }: Rezervasyonla
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
-                        {reservation.guestName}
+                        {(() => {
+                          try {
+                            const customers = JSON.parse(reservation.customers as string);
+                            if (customers.length > 1) {
+                              return `${customers[0].name} +${customers.length - 1} kişi`;
+                            }
+                            return customers[0]?.name || 'Müşteri bilgisi yok';
+                          } catch {
+                            return 'Müşteri bilgisi yok';
+                          }
+                        })()}
                       </h3>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                         reservation.status === "confirmed" 
@@ -217,8 +227,34 @@ export default async function RezervasyonlarPage({ searchParams }: Rezervasyonla
                         <span className="font-medium">Çıkış:</span> {reservation.checkOut.toLocaleDateString("tr-TR")}
                       </div>
                       <div>
-                        <span className="font-medium">Email:</span> {reservation.guestEmail}
+                        <span className="font-medium">Para Birimi:</span> {reservation.currency}
                       </div>
+                    </div>
+                    
+                    {/* Müşteri Bilgileri */}
+                    <div className="mt-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                      <div className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                        👥 Müşteri Bilgileri
+                      </div>
+                      {(() => {
+                        try {
+                          const customers = JSON.parse(reservation.customers as string);
+                          return (
+                            <div className="space-y-2">
+                              {customers.map((customer: any, index: number) => (
+                                <div key={index} className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
+                                  <span className="font-medium">{index + 1}.</span>
+                                  <span>{customer.name}</span>
+                                  <span>📞 {customer.phone}</span>
+                                  {customer.email && <span>✉️ {customer.email}</span>}
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        } catch {
+                          return <div className="text-sm text-slate-500">Müşteri bilgisi yok</div>;
+                        }
+                      })()}
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-slate-600 dark:text-slate-400 mt-2">
                       <div>
@@ -237,7 +273,18 @@ export default async function RezervasyonlarPage({ searchParams }: Rezervasyonla
                       </p>
                     )}
                     <div className="flex items-center gap-4 mt-3 text-sm text-slate-500 dark:text-slate-500">
-                      <span>Toplam: ₺{reservation.totalAmount.toLocaleString()}</span>
+                      <span>
+                        Toplam: {(() => {
+                          const symbols = { TRY: '₺', USD: '$', EUR: '€' };
+                          const symbol = symbols[reservation.currency as keyof typeof symbols] || reservation.currency;
+                          return `${symbol}${reservation.totalAmount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`;
+                        })()}
+                        {reservation.currency !== 'TRY' && (
+                          <span className="text-xs text-slate-400 ml-1">
+                            (≈₺{(reservation.totalAmount * (reservation.exchangeRate || 1)).toLocaleString('tr-TR', { minimumFractionDigits: 2 })})
+                          </span>
+                        )}
+                      </span>
                       <span>Oluşturulma: {reservation.createdAt.toLocaleDateString("tr-TR")}</span>
                     </div>
                   </div>

@@ -174,8 +174,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ reservation, transaction }, { status: 201 });
   } catch (error) {
     console.error("Reservation create error:", error);
-    console.error("Error stack:", error instanceof Error ? error.stack : 'Unknown error');
-    return NextResponse.json({ error: "Sunucu hatası", details: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }
 
