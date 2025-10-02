@@ -147,21 +147,21 @@ model HotelReservation {
   tenant      Tenant   @relation(fields: [tenantId], references: [id])
   hotelId     String
   hotel       Hotel    @relation(fields: [hotelId], references: [id])
-  customerName String
-  customerPhone String
-  customerEmail String?
+  customers   Json     @default("[]") // Array of customer objects
   checkIn     DateTime
   checkOut    DateTime
   nights      Int
   rooms       Int
   adults      Int
   children    Int
-  totalAmount Int
+  totalAmount Float
+  currency    String   @default("TRY") // TRY, USD, EUR
+  exchangeRate Float?  // Rezervasyon anındaki kur
   paymentMethod String? // nakit, havale, kredi_karti
   collectionMethod String? // ofiste, otelde, online, kapida
   paymentTiming String? // pesin, kapora
-  depositAmount Int? // kapora tutarı (kuruş)
-  remainingAmount Int? // kalan tutar (kuruş)
+  depositAmount Float? // kapora tutarı
+  remainingAmount Float? // kalan tutar
   status      String   @default("pending") // pending, confirmed, cancelled, completed
   notes       String?
   createdAt   DateTime @default(now())
@@ -361,7 +361,10 @@ model Transaction {
   tenant      Tenant   @relation(fields: [tenantId], references: [id])
   type        String   // income, expense
   category    String   // otel, tur, transfer, ucak, saglik, araç, diger
-  amount      Int
+  amount      Float
+  currency    String   @default("TRY") // TRY, USD, EUR
+  exchangeRate Float?  // İşlem anındaki kur (TRY'ye çevrim için)
+  amountTRY   Float?   // TRY cinsinden tutar (raporlama için)
   description String
   source      String   // müşteri, tedarikçi, banka vb.
   reference   String?  // fatura no, rezervasyon no vb.

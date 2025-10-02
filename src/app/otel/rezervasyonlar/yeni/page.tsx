@@ -13,22 +13,28 @@ interface Hotel {
   stars: number;
 }
 
+interface CurrencyRates {
+  TRY: { code: string; name: string; buying: number; selling: number; };
+  USD: { code: string; name: string; buying: number; selling: number; };
+  EUR: { code: string; name: string; buying: number; selling: number; };
+}
+
 export default function YeniRezervasyonPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
+  const [currencyRates, setCurrencyRates] = useState<CurrencyRates | null>(null);
   const [formData, setFormData] = useState({
     hotelId: "",
-    customerName: "",
-    customerPhone: "",
-    customerEmail: "",
+    customers: [{ name: "", phone: "", email: "" }],
     checkIn: "",
     checkOut: "",
     rooms: "",
     adults: "",
     children: "",
     totalAmount: "",
+    currency: "TRY",
     paymentMethod: "",
     collectionMethod: "",
     paymentTiming: "",
@@ -38,6 +44,17 @@ export default function YeniRezervasyonPage() {
   });
 
   useEffect(() => {
+    // Varsayılan tarihleri ayarla (bugün ve yarın)
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    setFormData(prev => ({
+      ...prev,
+      checkIn: today.toISOString().split('T')[0],
+      checkOut: tomorrow.toISOString().split('T')[0]
+    }));
+
     // Fetch hotels
     fetch("/api/otel/oteller")
       .then(res => res.json())
@@ -47,6 +64,16 @@ export default function YeniRezervasyonPage() {
         }
       })
       .catch(error => console.error("Error fetching hotels:", error));
+
+    // Fetch currency rates
+    fetch("/api/currency/rates")
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.rates) {
+          setCurrencyRates(data.rates);
+        }
+      })
+      .catch(error => console.error("Error fetching currency rates:", error));
   }, []);
 
   useEffect(() => {
@@ -90,6 +117,42 @@ export default function YeniRezervasyonPage() {
       ...prev,
       [name]: value,
     }));
+  };
+
+  const handleCustomerChange = (index: number, field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      customers: prev.customers.map((customer, i) => 
+        i === index ? { ...customer, [field]: value } : customer
+      )
+    }));
+  };
+
+  const addCustomer = () => {
+    setFormData(prev => ({
+      ...prev,
+      customers: [...prev.customers, { name: "", phone: "", email: "" }]
+    }));
+  };
+
+  const removeCustomer = (index: number) => {
+    if (formData.customers.length > 1) {
+      setFormData(prev => ({
+        ...prev,
+        customers: prev.customers.filter((_, i) => i !== index)
+      }));
+    }
+  };
+
+  const getCurrencySymbol = (currency: string) => {
+    const symbols = { TRY: '₺', USD: '$', EUR: '€' };
+    return symbols[currency as keyof typeof symbols] || currency;
+  };
+
+  const formatCurrency = (amount: string, currency: string) => {
+    if (!amount || !currency) return '';
+    const symbol = getCurrencySymbol(currency);
+    return `${symbol}${parseFloat(amount).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`;
   };
 
   const calculateNights = () => {
@@ -176,51 +239,82 @@ export default function YeniRezervasyonPage() {
               )}
             </div>
 
-            <div>
-              <label htmlFor="customerName" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Müşteri Adı *
-              </label>
-              <input
-                type="text"
-                id="customerName"
-                name="customerName"
-                value={formData.customerName}
-                onChange={handleChange}
-                required
-                className="modern-input w-full"
-                placeholder="Örn: Ahmet Yılmaz"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="customerPhone" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Müşteri Telefon *
-              </label>
-              <input
-                type="tel"
-                id="customerPhone"
-                name="customerPhone"
-                value={formData.customerPhone}
-                onChange={handleChange}
-                required
-                className="modern-input w-full"
-                placeholder="Örn: 0532 123 45 67"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="customerEmail" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Müşteri Email
-              </label>
-              <input
-                type="email"
-                id="customerEmail"
-                name="customerEmail"
-                value={formData.customerEmail}
-                onChange={handleChange}
-                className="modern-input w-full"
-                placeholder="Örn: ahmet@example.com"
-              />
+            {/* Müşteri Bilgileri */}
+            <div className="md:col-span-2">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
+                  Müşteri Bilgileri ({formData.customers.length} kişi)
+                </h3>
+                <button
+                  type="button"
+                  onClick={addCustomer}
+                  className="modern-button-secondary text-sm"
+                >
+                  + Müşteri Ekle
+                </button>
+              </div>
+              
+              {formData.customers.map((customer, index) => (
+                <div key={index} className="border rounded-lg p-4 mb-4 bg-slate-50 dark:bg-slate-800/50">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-medium text-slate-700 dark:text-slate-300">
+                      {index + 1}. Müşteri
+                    </h4>
+                    {formData.customers.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeCustomer(index)}
+                        className="text-red-500 hover:text-red-700 text-sm"
+                      >
+                        Kaldır
+                      </button>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                        Ad Soyad *
+                      </label>
+                      <input
+                        type="text"
+                        value={customer.name}
+                        onChange={(e) => handleCustomerChange(index, 'name', e.target.value)}
+                        required
+                        className="modern-input w-full"
+                        placeholder="Örn: Ahmet Yılmaz"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                        Telefon *
+                      </label>
+                      <input
+                        type="tel"
+                        value={customer.phone}
+                        onChange={(e) => handleCustomerChange(index, 'phone', e.target.value)}
+                        required
+                        className="modern-input w-full"
+                        placeholder="Örn: 0532 123 45 67"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        value={customer.email}
+                        onChange={(e) => handleCustomerChange(index, 'email', e.target.value)}
+                        className="modern-input w-full"
+                        placeholder="Örn: ahmet@example.com"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
 
             <div>
@@ -326,8 +420,31 @@ export default function YeniRezervasyonPage() {
             </div>
 
             <div>
+              <label htmlFor="currency" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Para Birimi *
+              </label>
+              <select
+                id="currency"
+                name="currency"
+                value={formData.currency}
+                onChange={handleChange}
+                required
+                className="modern-input w-full"
+              >
+                <option value="TRY">🇹🇷 Türk Lirası (₺)</option>
+                <option value="EUR">🇪🇺 Euro (€)</option>
+                <option value="USD">🇺🇸 Amerikan Doları ($)</option>
+              </select>
+              {currencyRates && formData.currency !== 'TRY' && (
+                <div className="mt-1 text-xs text-slate-600 dark:text-slate-400">
+                  1 {formData.currency} = {currencyRates[formData.currency as keyof CurrencyRates]?.selling.toFixed(2)} ₺
+                </div>
+              )}
+            </div>
+
+            <div>
               <label htmlFor="totalAmount" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Toplam Fiyat (₺) *
+                Toplam Fiyat ({getCurrencySymbol(formData.currency)}) *
               </label>
               <input
                 type="number"
@@ -337,9 +454,15 @@ export default function YeniRezervasyonPage() {
                 onChange={handleChange}
                 required
                 min="0"
+                step="0.01"
                 className="modern-input w-full"
-                placeholder="Örn: 2500"
+                placeholder={`Örn: ${formData.currency === 'TRY' ? '2500' : formData.currency === 'EUR' ? '75' : '85'}`}
               />
+              {formData.totalAmount && formData.currency !== 'TRY' && currencyRates && (
+                <div className="mt-1 text-xs text-slate-600 dark:text-slate-400">
+                  ≈ ₺{(parseFloat(formData.totalAmount) * currencyRates[formData.currency as keyof CurrencyRates]?.selling).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+                </div>
+              )}
             </div>
           </div>
 
@@ -408,7 +531,7 @@ export default function YeniRezervasyonPage() {
             {formData.paymentTiming === "kapora" && (
               <div className="mt-4">
                 <label htmlFor="depositAmount" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Kapora Tutarı (₺) *
+                  Kapora Tutarı ({getCurrencySymbol(formData.currency)}) *
                 </label>
                 <input
                   type="number"
@@ -419,12 +542,18 @@ export default function YeniRezervasyonPage() {
                   required={formData.paymentTiming === "kapora"}
                   min="0"
                   max={formData.totalAmount}
+                  step="0.01"
                   className="modern-input w-full md:w-1/3"
-                  placeholder="Örn: 500"
+                  placeholder={`Örn: ${formData.currency === 'TRY' ? '500' : formData.currency === 'EUR' ? '15' : '18'}`}
                 />
                 {formData.depositAmount && formData.totalAmount && (
                   <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                    Kalan tutar: ₺{(parseInt(formData.totalAmount) - parseInt(formData.depositAmount)).toLocaleString()}
+                    Kalan tutar: {formatCurrency((parseFloat(formData.totalAmount) - parseFloat(formData.depositAmount)).toString(), formData.currency)}
+                    {formData.currency !== 'TRY' && currencyRates && (
+                      <span className="ml-2 text-xs">
+                        (≈ ₺{((parseFloat(formData.totalAmount) - parseFloat(formData.depositAmount)) * currencyRates[formData.currency as keyof CurrencyRates]?.selling).toLocaleString('tr-TR', { minimumFractionDigits: 2 })})
+                      </span>
+                    )}
                   </p>
                 )}
               </div>

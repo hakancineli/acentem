@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
+import { getCurrencyRates, convertCurrency } from "@/lib/currencyService";
 
 export async function GET(request: NextRequest) {
   try {
@@ -27,9 +28,7 @@ export async function GET(request: NextRequest) {
       ...(status && { status }),
       ...(q && {
         OR: [
-          { customerName: { contains: q, mode: "insensitive" as const } },
-          { customerPhone: { contains: q, mode: "insensitive" as const } },
-          { customerEmail: { contains: q, mode: "insensitive" as const } },
+          { customers: { string_contains: q } },
           { hotel: { name: { contains: q, mode: "insensitive" as const } } },
         ],
       }),
@@ -74,27 +73,33 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { 
-      hotelId, 
-      customerName, 
-      customerPhone,
-      customerEmail, 
-      checkIn, 
-      checkOut, 
-      rooms, 
-      adults, 
-      children, 
+    const {
+      hotelId,
+      customers,
+      checkIn,
+      checkOut,
+      rooms,
+      adults,
+      children,
       totalAmount,
+      currency = "TRY",
       paymentMethod,
       collectionMethod,
       paymentTiming,
       depositAmount,
       status = "pending",
-      notes 
+      notes
     } = body;
 
-    if (!hotelId || !customerName || !customerPhone || !checkIn || !checkOut || !rooms || !adults || !totalAmount) {
+    if (!hotelId || !customers || !Array.isArray(customers) || customers.length === 0 || !checkIn || !checkOut || !rooms || !adults || !totalAmount) {
       return NextResponse.json({ error: "Gerekli alanlar eksik" }, { status: 400 });
+    }
+
+    // Validate customers
+    for (const customer of customers) {
+      if (!customer.name || !customer.phone) {
+        return NextResponse.json({ error: "Her müşteri için ad ve telefon gereklidir" }, { status: 400 });
+      }
     }
 
     // Check if hotel exists and belongs to tenant
@@ -110,8 +115,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Kapora hesaplama
-    const calculatedDepositAmount = paymentTiming === "kapora" && depositAmount ? parseInt(depositAmount) : parseInt(totalAmount);
-    const calculatedRemainingAmount = paymentTiming === "kapora" && depositAmount ? parseInt(totalAmount) - parseInt(depositAmount) : 0;
+    // Get exchange rates for currency conversion
+    const rates = await getCurrencyRates();
+    const exchangeRate = currency !== "TRY" ? rates[currency as keyof typeof rates]?.selling : 1;
+    
+    const calculatedDepositAmount = paymentTiming === "kapora" && depositAmount ? parseFloat(depositAmount) : parseFloat(totalAmount);
+    const calculatedRemainingAmount = paymentTiming === "kapora" && depositAmount ? parseFloat(totalAmount) - parseFloat(depositAmount) : 0;
 
     const nights = Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60 * 60 * 24));
 
@@ -119,16 +128,16 @@ export async function POST(request: NextRequest) {
       data: {
         tenantId,
         hotelId,
-        customerName,
-        customerPhone,
-        customerEmail,
+        customers: JSON.stringify(customers),
         checkIn: new Date(checkIn),
         checkOut: new Date(checkOut),
         nights,
         rooms: parseInt(rooms),
         adults: parseInt(adults),
         children: parseInt(children) || 0,
-        totalAmount: parseInt(totalAmount),
+        totalAmount: parseFloat(totalAmount),
+        currency,
+        exchangeRate,
         paymentMethod,
         collectionMethod,
         paymentTiming,
@@ -140,18 +149,25 @@ export async function POST(request: NextRequest) {
     });
 
     // Muhasebe kaydı: pending income / otel kategorisi
+    // Calculate amount in TRY for accounting
+    const amountTRY = currency === "TRY" ? calculatedDepositAmount : calculatedDepositAmount * (exchangeRate || 1);
+    const primaryCustomer = customers[0];
+
     const transaction = await prisma.transaction.create({
       data: {
         tenantId,
         type: "income",
         category: "otel",
-        amount: calculatedDepositAmount, // İlk aşamada kapora veya tam tutar
-        description: `Otel rezervasyon ücreti (${customerName})`,
-        source: customerName || "Müşteri",
+        amount: calculatedDepositAmount,
+        currency,
+        exchangeRate,
+        amountTRY,
+        description: `Otel rezervasyon ücreti (${primaryCustomer.name}${customers.length > 1 ? ` +${customers.length - 1} kişi` : ''})`,
+        source: primaryCustomer.name || "Müşteri",
         reference: reservation.id,
         date: new Date(),
         status: "pending",
-        notes: `Otel: ${hotel.name}, ${rooms} oda, ${adults} yetişkin, ${children || 0} çocuk, ${nights} gece. Ödeme: ${paymentMethod || 'Belirtilmedi'}, Tahsilat: ${collectionMethod || 'Belirtilmedi'}`,
+        notes: `Otel: ${hotel.name}, ${rooms} oda, ${adults} yetişkin, ${children || 0} çocuk, ${nights} gece. Ödeme: ${paymentMethod || 'Belirtilmedi'}, Tahsilat: ${collectionMethod || 'Belirtilmedi'}. Para birimi: ${currency}`,
       },
     });
 
