@@ -98,6 +98,24 @@ export default async function MuhasebePage() {
   });
   const tourRevenue = tourRevenueAgg._sum.amount || 0;
 
+  const yachtRevenueAgg = await prisma.transaction.aggregate({
+    where: { tenantId, type: "income", category: "vip_yat" },
+    _sum: { amount: true }
+  });
+  const yachtRevenue = yachtRevenueAgg._sum.amount || 0;
+
+  const cruiseRevenueAgg = await prisma.transaction.aggregate({
+    where: { tenantId, type: "income", category: "cruise" },
+    _sum: { amount: true }
+  });
+  const cruiseRevenue = cruiseRevenueAgg._sum.amount || 0;
+
+  const emlakRevenueAgg = await prisma.transaction.aggregate({
+    where: { tenantId, type: "income", category: "emlak" },
+    _sum: { amount: true }
+  });
+  const emlakRevenue = emlakRevenueAgg._sum.amount || 0;
+
   // Son işlemler
   const recentCollections = await prisma.collection.findMany({
     where: { tenantId },
@@ -206,6 +224,18 @@ export default async function MuhasebePage() {
               <div className="flex justify-between items-center">
                 <span className="text-sm text-slate-600 dark:text-slate-400">Sağlık Geliri</span>
                 <span className="text-sm font-medium text-slate-800 dark:text-slate-200">₺0</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-slate-600 dark:text-slate-400">Vip Yat Geliri</span>
+                <span className="text-sm font-medium text-slate-800 dark:text-slate-200">₺{yachtRevenue.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-slate-600 dark:text-slate-400">Cruise Geliri</span>
+                <span className="text-sm font-medium text-slate-800 dark:text-slate-200">₺{cruiseRevenue.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-slate-600 dark:text-slate-400">Emlak Geliri</span>
+                <span className="text-sm font-medium text-slate-800 dark:text-slate-200">₺{emlakRevenue.toLocaleString()}</span>
               </div>
             </div>
           </div>

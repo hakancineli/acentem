@@ -20,7 +20,7 @@ export default async function ReportsPage() {
   const tenantId = cookieStore.get("tenant-id")?.value || null;
   const whereTenant = tenantId ? { tenantId } : {};
 
-  const [policyTotal, offerTotal, collectionSum, vehicleRentalTotal, vehicleRentalRevenue, transferBookingTotal, transferRevenue, tourBookingTotal, tourRevenue] = await Promise.all([
+  const [policyTotal, offerTotal, collectionSum, vehicleRentalTotal, vehicleRentalRevenue, transferBookingTotal, transferRevenue, tourBookingTotal, tourRevenue, yachtRentalTotal, yachtRevenue, cruiseBookingTotal, cruiseRevenue, propertyRentalTotal, propertySaleTotal, emlakRevenue] = await Promise.all([
     prisma.policy.count({ where: whereTenant as any }),
     prisma.offer.count({ where: whereTenant as any }),
     prisma.collection.aggregate({ where: whereTenant as any, _sum: { amount: true } }),
@@ -51,6 +51,34 @@ export default async function ReportsPage() {
       } as any, 
       _sum: { amount: true } 
     }),
+    prisma.yachtRental.count({ where: whereTenant as any }),
+    prisma.transaction.aggregate({ 
+      where: { 
+        ...whereTenant, 
+        type: "income", 
+        category: "vip_yat" 
+      } as any, 
+      _sum: { amount: true } 
+    }),
+    prisma.cruiseBooking.count({ where: whereTenant as any }),
+    prisma.transaction.aggregate({ 
+      where: { 
+        ...whereTenant, 
+        type: "income", 
+        category: "cruise" 
+      } as any, 
+      _sum: { amount: true } 
+    }),
+    prisma.propertyRental.count({ where: whereTenant as any }),
+    prisma.propertySale.count({ where: whereTenant as any }),
+    prisma.transaction.aggregate({ 
+      where: { 
+        ...whereTenant, 
+        type: "income", 
+        category: "emlak" 
+      } as any, 
+      _sum: { amount: true } 
+    }),
   ]);
 
   const series = await Promise.all(
@@ -59,7 +87,7 @@ export default async function ReportsPage() {
       const next = new Date(dayStart);
       next.setDate(next.getDate() + 1);
       const whereDay = { ...whereTenant, createdAt: { gte: dayStart, lt: next } } as any;
-      const [p, o, c, vr, vrRev, tb, tr, tbr, trr] = await Promise.all([
+      const [p, o, c, vr, vrRev, tb, tr, tbr, trr, yr, yrRev, cb, cr, pr, ps, er] = await Promise.all([
         prisma.policy.count({ where: whereDay }),
         prisma.offer.count({ where: whereDay }),
         prisma.collection.aggregate({ where: whereDay, _sum: { amount: true } }),
@@ -90,8 +118,36 @@ export default async function ReportsPage() {
           } as any, 
           _sum: { amount: true } 
         }),
+        prisma.yachtRental.count({ where: whereDay }),
+        prisma.transaction.aggregate({ 
+          where: { 
+            ...whereDay, 
+            type: "income", 
+            category: "vip_yat" 
+          } as any, 
+          _sum: { amount: true } 
+        }),
+        prisma.cruiseBooking.count({ where: whereDay }),
+        prisma.transaction.aggregate({ 
+          where: { 
+            ...whereDay, 
+            type: "income", 
+            category: "cruise" 
+          } as any, 
+          _sum: { amount: true } 
+        }),
+        prisma.propertyRental.count({ where: whereDay }),
+        prisma.propertySale.count({ where: whereDay }),
+        prisma.transaction.aggregate({ 
+          where: { 
+            ...whereDay, 
+            type: "income", 
+            category: "emlak" 
+          } as any, 
+          _sum: { amount: true } 
+        }),
       ]);
-      return { p, o, c: c._sum.amount || 0, vr, vrRev: vrRev._sum.amount || 0, tb, tr: tr._sum.amount || 0, tbr, trr: trr._sum.amount || 0 };
+      return { p, o, c: c._sum.amount || 0, vr, vrRev: vrRev._sum.amount || 0, tb, tr: tr._sum.amount || 0, tbr, trr: trr._sum.amount || 0, yr, yrRev: yrRev._sum.amount || 0, cb, cr: cr._sum.amount || 0, pr, ps, er: er._sum.amount || 0 };
     })
   );
 
@@ -137,6 +193,37 @@ export default async function ReportsPage() {
         <div className="rounded border p-4">
           <div className="font-medium mb-1">🏛️ Tur Geliri: ₺{(tourRevenue._sum.amount || 0).toLocaleString("tr-TR")}</div>
           <TrendSpark points={series.map((s) => Math.max(1, Math.round(s.trr / 1000)))} />
+          <div className="text-xs text-neutral-500 mt-1">(binlik ölçek)</div>
+        </div>
+        <div className="rounded border p-4">
+          <div className="font-medium mb-1">🛥️ Toplam Yat Kiralama: {yachtRentalTotal}</div>
+          <TrendSpark points={series.map((s) => s.yr)} />
+        </div>
+        <div className="rounded border p-4">
+          <div className="font-medium mb-1">🛥️ Yat Geliri: ₺{(yachtRevenue._sum.amount || 0).toLocaleString("tr-TR")}</div>
+          <TrendSpark points={series.map((s) => Math.max(1, Math.round(s.yrRev / 1000)))} />
+          <div className="text-xs text-neutral-500 mt-1">(binlik ölçek)</div>
+        </div>
+        <div className="rounded border p-4">
+          <div className="font-medium mb-1">🚢 Toplam Cruise: {cruiseBookingTotal}</div>
+          <TrendSpark points={series.map((s) => s.cb)} />
+        </div>
+        <div className="rounded border p-4">
+          <div className="font-medium mb-1">🚢 Cruise Geliri: ₺{(cruiseRevenue._sum.amount || 0).toLocaleString("tr-TR")}</div>
+          <TrendSpark points={series.map((s) => Math.max(1, Math.round(s.cr / 1000)))} />
+          <div className="text-xs text-neutral-500 mt-1">(binlik ölçek)</div>
+        </div>
+        <div className="rounded border p-4">
+          <div className="font-medium mb-1">🏠 Toplam Emlak Kiralama: {propertyRentalTotal}</div>
+          <TrendSpark points={series.map((s) => s.pr)} />
+        </div>
+        <div className="rounded border p-4">
+          <div className="font-medium mb-1">🏠 Toplam Emlak Satışı: {propertySaleTotal}</div>
+          <TrendSpark points={series.map((s) => s.ps)} />
+        </div>
+        <div className="rounded border p-4">
+          <div className="font-medium mb-1">🏠 Emlak Geliri: ₺{(emlakRevenue._sum.amount || 0).toLocaleString("tr-TR")}</div>
+          <TrendSpark points={series.map((s) => Math.max(1, Math.round(s.er / 1000)))} />
           <div className="text-xs text-neutral-500 mt-1">(binlik ölçek)</div>
         </div>
       </div>
