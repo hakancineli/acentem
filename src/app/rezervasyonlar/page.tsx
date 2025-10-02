@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { assertModuleEnabled } from "@/lib/moduleGuard";
 import Link from "next/link";
+import AllReservationsList, { ReservationRow } from "@/components/AllReservationsList";
 
 type Row = {
   id: string;
@@ -269,34 +270,7 @@ export default async function AllReservationsPage() {
       </div>
 
       <div className="modern-card p-6">
-        {rows.length === 0 ? (
-          <div className="text-sm text-slate-500">Kayıt bulunamadı.</div>
-        ) : (
-          <div className="divide-y">
-            {rows.map((r) => (
-              <Link key={r.id} href={r.href} className="block py-3 hover:bg-slate-50 dark:hover:bg-slate-800/40 px-2 rounded">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">{r.module} • {r.title}</div>
-                    <div className="text-xs text-slate-500">
-                      {r.subtitle ? r.subtitle + " • " : ""}
-                      {new Date(r.dateFrom as any).toLocaleDateString("tr-TR")}
-                      {r.dateTo ? ` → ${new Date(r.dateTo as any).toLocaleDateString("tr-TR")}` : ""}
-                    </div>
-                  </div>
-                  <div className="text-right text-sm text-slate-600 dark:text-slate-300">
-                    {r.amount != null && (
-                      <div>
-                        {symbol(r.currency)}{Number(r.amount).toLocaleString("tr-TR")}
-                      </div>
-                    )}
-                    {r.status && <div className="text-xs text-slate-500">{r.status}</div>}
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
+        <AllReservationsList rows={rows as unknown as ReservationRow[]} modules={[...new Set(rows.map(r => r.module))]} />
       </div>
     </div>
   );
