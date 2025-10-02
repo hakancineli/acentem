@@ -18,14 +18,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
     }
 
-    const yachts = await prisma.yacht.findMany({
+    const properties = await prisma.property.findMany({
       where: { tenantId: tenant.id },
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json(yachts);
+    return NextResponse.json(properties);
   } catch (error) {
-    console.error("Error fetching yachts:", error);
+    console.error("Error fetching properties:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -47,49 +47,61 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const {
-      name,
+      title,
       type,
-      length,
-      width,
-      capacity,
-      cabins,
-      crew,
-      year,
       location,
-      port,
-      dailyRate,
-      weeklyRate,
-      monthlyRate,
-      deposit,
+      city,
+      district,
+      neighborhood,
+      address,
+      rooms,
+      bathrooms,
+      area,
+      floor,
+      buildingAge,
+      heating,
+      parking,
+      balcony,
+      elevator,
+      furnished,
+      rentPrice,
+      salePrice,
+      description,
       features,
       images,
     } = body;
 
-    const yacht = await prisma.yacht.create({
+    const property = await prisma.property.create({
       data: {
         tenantId: tenant.id,
-        name,
+        title,
         type,
-        length: parseFloat(length),
-        width: parseFloat(width),
-        capacity: parseInt(capacity),
-        cabins: parseInt(cabins),
-        crew: parseInt(crew),
-        year: parseInt(year),
         location,
-        port,
-        dailyRate: parseInt(dailyRate),
-        weeklyRate: weeklyRate ? parseInt(weeklyRate) : null,
-        monthlyRate: monthlyRate ? parseInt(monthlyRate) : null,
-        deposit: deposit ? parseInt(deposit) : null,
+        city,
+        district,
+        neighborhood,
+        address,
+        rooms: parseInt(rooms),
+        bathrooms: parseInt(bathrooms),
+        area: parseFloat(area),
+        floor: floor ? parseInt(floor) : null,
+        buildingAge: buildingAge ? parseInt(buildingAge) : null,
+        heating,
+        parking,
+        balcony,
+        elevator,
+        furnished,
+        rentPrice: rentPrice ? parseInt(rentPrice) : null,
+        salePrice: salePrice ? parseInt(salePrice) : null,
+        description,
         features,
         images,
       },
     });
 
-    return NextResponse.json(yacht);
+    return NextResponse.json(property);
   } catch (error) {
-    console.error("Error creating yacht:", error);
+    console.error("Error creating property:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

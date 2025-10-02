@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
-export default async function YatlarPage() {
+export default async function EmlaklarPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) redirect("/login");
 
@@ -14,7 +14,7 @@ export default async function YatlarPage() {
 
   if (!tenant) redirect("/login");
 
-  const yachts = await prisma.yacht.findMany({
+  const properties = await prisma.property.findMany({
     where: { tenantId: tenant.id },
     orderBy: { createdAt: "desc" },
   });
@@ -23,13 +23,13 @@ export default async function YatlarPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-          Yat Listesi
+          Emlak Listesi
         </h1>
         <Link
-          href="/vip-yat/yatlar/yeni"
+          href="/emlak/emlaklar/yeni"
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
-          Yeni Yat Ekle
+          Yeni Emlak Ekle
         </Link>
       </div>
 
@@ -39,19 +39,25 @@ export default async function YatlarPage() {
             <thead className="bg-slate-50 dark:bg-slate-700">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">
-                  Yat Adı
+                  Başlık
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">
                   Tip
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">
-                  Boyut
+                  Konum
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">
-                  Kapasite
+                  Oda
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">
-                  Günlük Ücret
+                  Alan
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">
+                  Kira Fiyatı
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">
+                  Satış Fiyatı
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">
                   Durum
@@ -62,47 +68,53 @@ export default async function YatlarPage() {
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
-              {yachts.map((yacht) => (
-                <tr key={yacht.id}>
+              {properties.map((property) => (
+                <tr key={property.id}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                      {yacht.name}
+                      {property.title}
                     </div>
                     <div className="text-sm text-slate-500 dark:text-slate-400">
-                      {yacht.location}
+                      {property.address}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-100">
-                    {yacht.type}
+                    {property.type}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-100">
-                    {yacht.length}m x {yacht.width}m
+                    {property.city}, {property.district}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-100">
-                    {yacht.capacity} kişi
+                    {property.rooms} oda
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-100">
-                    ₺{yacht.dailyRate.toLocaleString()}
+                    {property.area} m²
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-100">
+                    {property.rentPrice ? `₺${property.rentPrice.toLocaleString()}` : "-"}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-100">
+                    {property.salePrice ? `₺${property.salePrice.toLocaleString()}` : "-"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      yacht.isActive 
+                      property.isActive 
                         ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
                         : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
                     }`}>
-                      {yacht.isActive ? "Aktif" : "Pasif"}
+                      {property.isActive ? "Aktif" : "Pasif"}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
                       <Link
-                        href={`/vip-yat/yatlar/${yacht.id}`}
+                        href={`/emlak/emlaklar/${property.id}`}
                         className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                       >
                         Görüntüle
                       </Link>
                       <Link
-                        href={`/vip-yat/yatlar/${yacht.id}/duzenle`}
+                        href={`/emlak/emlaklar/${property.id}/duzenle`}
                         className="text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-300"
                       >
                         Düzenle

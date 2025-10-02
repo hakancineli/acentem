@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
-export default async function YatlarPage() {
+export default async function RezervasyonlarPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) redirect("/login");
 
@@ -14,8 +14,9 @@ export default async function YatlarPage() {
 
   if (!tenant) redirect("/login");
 
-  const yachts = await prisma.yacht.findMany({
+  const bookings = await prisma.cruiseBooking.findMany({
     where: { tenantId: tenant.id },
+    include: { cruise: true },
     orderBy: { createdAt: "desc" },
   });
 
@@ -23,13 +24,13 @@ export default async function YatlarPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-          Yat Listesi
+          Cruise Rezervasyonları
         </h1>
         <Link
-          href="/vip-yat/yatlar/yeni"
+          href="/cruise/rezervasyonlar/yeni"
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
-          Yeni Yat Ekle
+          Yeni Rezervasyon
         </Link>
       </div>
 
@@ -39,19 +40,19 @@ export default async function YatlarPage() {
             <thead className="bg-slate-50 dark:bg-slate-700">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">
-                  Yat Adı
+                  Müşteri
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">
-                  Tip
+                  Cruise
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">
-                  Boyut
+                  Tarih
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">
-                  Kapasite
+                  Katılımcı
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">
-                  Günlük Ücret
+                  Tutar
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">
                   Durum
@@ -62,47 +63,58 @@ export default async function YatlarPage() {
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
-              {yachts.map((yacht) => (
-                <tr key={yacht.id}>
+              {bookings.map((booking) => (
+                <tr key={booking.id}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                      {yacht.name}
+                      {booking.customerName}
                     </div>
                     <div className="text-sm text-slate-500 dark:text-slate-400">
-                      {yacht.location}
+                      {booking.customerPhone}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                      {booking.cruise.name}
+                    </div>
+                    <div className="text-sm text-slate-500 dark:text-slate-400">
+                      {booking.cruise.route}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-100">
-                    {yacht.type}
+                    {new Date(booking.startDate).toLocaleDateString("tr-TR")}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-100">
-                    {yacht.length}m x {yacht.width}m
+                    {booking.participants} kişi
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-100">
-                    {yacht.capacity} kişi
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-100">
-                    ₺{yacht.dailyRate.toLocaleString()}
+                    ₺{booking.totalAmount.toLocaleString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      yacht.isActive 
+                      booking.status === "pending" 
+                        ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400"
+                        : booking.status === "confirmed"
                         ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
-                        : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
+                        : booking.status === "cancelled"
+                        ? "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
+                        : "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
                     }`}>
-                      {yacht.isActive ? "Aktif" : "Pasif"}
+                      {booking.status === "pending" ? "Beklemede" : 
+                       booking.status === "confirmed" ? "Onaylandı" :
+                       booking.status === "cancelled" ? "İptal" : "Tamamlandı"}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
                       <Link
-                        href={`/vip-yat/yatlar/${yacht.id}`}
+                        href={`/cruise/rezervasyonlar/${booking.id}`}
                         className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                       >
                         Görüntüle
                       </Link>
                       <Link
-                        href={`/vip-yat/yatlar/${yacht.id}/duzenle`}
+                        href={`/cruise/rezervasyonlar/${booking.id}/duzenle`}
                         className="text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-300"
                       >
                         Düzenle

@@ -18,14 +18,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
     }
 
-    const yachts = await prisma.yacht.findMany({
+    const cruises = await prisma.cruise.findMany({
       where: { tenantId: tenant.id },
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json(yachts);
+    return NextResponse.json(cruises);
   } catch (error) {
-    console.error("Error fetching yachts:", error);
+    console.error("Error fetching cruises:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -48,48 +48,36 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       name,
-      type,
-      length,
-      width,
+      route,
+      duration,
       capacity,
-      cabins,
-      crew,
-      year,
-      location,
-      port,
-      dailyRate,
-      weeklyRate,
-      monthlyRate,
-      deposit,
-      features,
+      price,
+      description,
+      itinerary,
+      includes,
+      excludes,
       images,
     } = body;
 
-    const yacht = await prisma.yacht.create({
+    const cruise = await prisma.cruise.create({
       data: {
         tenantId: tenant.id,
         name,
-        type,
-        length: parseFloat(length),
-        width: parseFloat(width),
+        route,
+        duration: parseInt(duration),
         capacity: parseInt(capacity),
-        cabins: parseInt(cabins),
-        crew: parseInt(crew),
-        year: parseInt(year),
-        location,
-        port,
-        dailyRate: parseInt(dailyRate),
-        weeklyRate: weeklyRate ? parseInt(weeklyRate) : null,
-        monthlyRate: monthlyRate ? parseInt(monthlyRate) : null,
-        deposit: deposit ? parseInt(deposit) : null,
-        features,
+        price: parseInt(price),
+        description,
+        itinerary,
+        includes,
+        excludes,
         images,
       },
     });
 
-    return NextResponse.json(yacht);
+    return NextResponse.json(cruise);
   } catch (error) {
-    console.error("Error creating yacht:", error);
+    console.error("Error creating cruise:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
