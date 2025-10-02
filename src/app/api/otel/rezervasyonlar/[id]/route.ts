@@ -123,13 +123,26 @@ export async function PUT(
       const existingTx = await prisma.transaction.findFirst({ 
         where: { tenantId, reference: reservation.id } 
       });
+      // amountTRY hesapla (çoklu para birimi)
+      const amountBase = reservation.totalAmount;
+      const exch = reservation.exchangeRate || 1;
+      const amountTRY = reservation.currency === "TRY" ? amountBase : amountBase * exch;
+      // müşteri adı (ilk kişi)
+      let primaryName = "Müşteri";
+      try {
+        const customers = JSON.parse((existingReservation as any).customers || "[]");
+        if (Array.isArray(customers) && customers[0]?.name) primaryName = customers[0].name;
+      } catch {}
       
       if (existingTx) {
         voucher = await prisma.transaction.update({
           where: { id: existingTx.id },
           data: {
             amount: reservation.totalAmount,
-            description: `Otel rezervasyon ücreti (${reservation.customerName})`,
+            currency: reservation.currency || "TRY",
+            exchangeRate: reservation.exchangeRate || 1,
+            amountTRY,
+            description: `Otel rezervasyon ücreti (${primaryName})`,
             date: new Date(),
             status: "completed",
             notes: `Otel: ${existingReservation.hotel.name}, ${reservation.rooms} oda, ${reservation.adults} yetişkin, ${reservation.children} çocuk, ${reservation.nights} gece. Ödeme: ${reservation.paymentMethod || 'Belirtilmedi'}, Tahsilat: ${reservation.collectionMethod || 'Belirtilmedi'}`,
@@ -142,8 +155,11 @@ export async function PUT(
             type: "income",
             category: "otel",
             amount: reservation.totalAmount,
-            description: `Otel rezervasyon ücreti (${reservation.customerName})`,
-            source: reservation.customerName || "Müşteri",
+            currency: reservation.currency || "TRY",
+            exchangeRate: reservation.exchangeRate || 1,
+            amountTRY,
+            description: `Otel rezervasyon ücreti (${primaryName})`,
+            source: primaryName,
             reference: reservation.id,
             date: new Date(),
             status: "completed",

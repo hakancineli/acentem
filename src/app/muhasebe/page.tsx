@@ -40,28 +40,28 @@ export default async function MuhasebePage() {
     // Toplam gelir (Transaction tablosundan)
     prisma.transaction.aggregate({
       where: { tenantId, type: "income", status: "completed" },
-      _sum: { amount: true }
-    }).then(result => result._sum.amount || 0),
+      _sum: { amountTRY: true }
+    }).then(result => result._sum.amountTRY || 0),
     
     // Toplam gider (Transaction tablosundan)
     prisma.transaction.aggregate({
       where: { tenantId, type: "expense", status: "completed" },
-      _sum: { amount: true }
-    }).then(result => result._sum.amount || 0),
+      _sum: { amountTRY: true }
+    }).then(result => result._sum.amountTRY || 0),
     
     // Net kar hesaplama (gelir - gider)
     Promise.all([
       prisma.transaction.aggregate({
         where: { tenantId, type: "income", status: "completed" },
-        _sum: { amount: true }
+        _sum: { amountTRY: true }
       }),
       prisma.transaction.aggregate({
         where: { tenantId, type: "expense", status: "completed" },
-        _sum: { amount: true }
+        _sum: { amountTRY: true }
       })
     ]).then(results => {
-      const revenue = results[0]._sum.amount || 0;
-      const expenses = results[1]._sum.amount || 0;
+      const revenue = results[0]._sum.amountTRY || 0;
+      const expenses = results[1]._sum.amountTRY || 0;
       return revenue - expenses;
     }),
     
@@ -75,46 +75,46 @@ export default async function MuhasebePage() {
           gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
         }
       },
-      _sum: { amount: true }
-    }).then(result => result._sum.amount || 0)
+      _sum: { amountTRY: true }
+    }).then(result => result._sum.amountTRY || 0)
   ]);
 
   // Kategori bazında gelirler
   const vehicleRevenueAgg = await prisma.transaction.aggregate({
-    where: { tenantId, type: "income", category: "arac" },
-    _sum: { amount: true }
+    where: { tenantId, type: "income", status: "completed", category: "arac" },
+    _sum: { amountTRY: true }
   });
-  const vehicleRevenue = vehicleRevenueAgg._sum.amount || 0;
+  const vehicleRevenue = vehicleRevenueAgg._sum.amountTRY || 0;
 
   const transferRevenueAgg = await prisma.transaction.aggregate({
-    where: { tenantId, type: "income", category: "transfer" },
-    _sum: { amount: true }
+    where: { tenantId, type: "income", status: "completed", category: "transfer" },
+    _sum: { amountTRY: true }
   });
-  const transferRevenue = transferRevenueAgg._sum.amount || 0;
+  const transferRevenue = transferRevenueAgg._sum.amountTRY || 0;
 
   const tourRevenueAgg = await prisma.transaction.aggregate({
-    where: { tenantId, type: "income", category: "tur" },
-    _sum: { amount: true }
+    where: { tenantId, type: "income", status: "completed", category: "tur" },
+    _sum: { amountTRY: true }
   });
-  const tourRevenue = tourRevenueAgg._sum.amount || 0;
+  const tourRevenue = tourRevenueAgg._sum.amountTRY || 0;
 
   const yachtRevenueAgg = await prisma.transaction.aggregate({
-    where: { tenantId, type: "income", category: "vip_yat" },
-    _sum: { amount: true }
+    where: { tenantId, type: "income", status: "completed", category: "vip_yat" },
+    _sum: { amountTRY: true }
   });
-  const yachtRevenue = yachtRevenueAgg._sum.amount || 0;
+  const yachtRevenue = yachtRevenueAgg._sum.amountTRY || 0;
 
   const cruiseRevenueAgg = await prisma.transaction.aggregate({
-    where: { tenantId, type: "income", category: "cruise" },
-    _sum: { amount: true }
+    where: { tenantId, type: "income", status: "completed", category: "cruise" },
+    _sum: { amountTRY: true }
   });
-  const cruiseRevenue = cruiseRevenueAgg._sum.amount || 0;
+  const cruiseRevenue = cruiseRevenueAgg._sum.amountTRY || 0;
 
   const emlakRevenueAgg = await prisma.transaction.aggregate({
-    where: { tenantId, type: "income", category: "emlak" },
-    _sum: { amount: true }
+    where: { tenantId, type: "income", status: "completed", category: "emlak" },
+    _sum: { amountTRY: true }
   });
-  const emlakRevenue = emlakRevenueAgg._sum.amount || 0;
+  const emlakRevenue = emlakRevenueAgg._sum.amountTRY || 0;
 
   // Son işlemler
   const recentCollections = await prisma.collection.findMany({
@@ -207,7 +207,10 @@ export default async function MuhasebePage() {
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-slate-600 dark:text-slate-400">Otel Geliri</span>
-                <span className="text-sm font-medium text-slate-800 dark:text-slate-200">₺0</span>
+                <span className="text-sm font-medium text-slate-800 dark:text-slate-200">₺{(
+                  (await prisma.transaction.aggregate({ where: { tenantId, type: "income", status: "completed", category: "otel" }, _sum: { amountTRY: true } }))
+                    ._sum.amountTRY || 0
+                ).toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-slate-600 dark:text-slate-400">Tur Geliri</span>

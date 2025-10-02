@@ -20,7 +20,7 @@ export default async function ReportsPage() {
   const tenantId = cookieStore.get("tenant-id")?.value || null;
   const whereTenant = tenantId ? { tenantId } : {};
 
-  const [policyTotal, offerTotal, collectionSum, vehicleRentalTotal, vehicleRentalRevenue, transferBookingTotal, transferRevenue, tourBookingTotal, tourRevenue, yachtRentalTotal, yachtRevenue, cruiseBookingTotal, cruiseRevenue, propertyRentalTotal, propertySaleTotal, emlakRevenue] = await Promise.all([
+  const [policyTotal, offerTotal, collectionSum, vehicleRentalTotal, vehicleRentalRevenue, transferBookingTotal, transferRevenue, tourBookingTotal, tourRevenue, yachtRentalTotal, yachtRevenue, cruiseBookingTotal, cruiseRevenue, propertyRentalTotal, propertySaleTotal, emlakRevenue, hotelRevenue] = await Promise.all([
     prisma.policy.count({ where: whereTenant as any }),
     prisma.offer.count({ where: whereTenant as any }),
     prisma.collection.aggregate({ where: whereTenant as any, _sum: { amount: true } }),
@@ -28,56 +28,71 @@ export default async function ReportsPage() {
     prisma.transaction.aggregate({ 
       where: { 
         ...whereTenant, 
-        type: "income", 
+        type: "income",
+        status: "completed",
         category: "arac" 
       } as any, 
-      _sum: { amount: true } 
+      _sum: { amountTRY: true } 
     }),
     prisma.transferBooking.count({ where: whereTenant as any }),
     prisma.transaction.aggregate({ 
       where: { 
         ...whereTenant, 
-        type: "income", 
+        type: "income",
+        status: "completed",
         category: "transfer" 
       } as any, 
-      _sum: { amount: true } 
+      _sum: { amountTRY: true } 
     }),
     prisma.tourBooking.count({ where: whereTenant as any }),
     prisma.transaction.aggregate({ 
       where: { 
         ...whereTenant, 
-        type: "income", 
+        type: "income",
+        status: "completed",
         category: "tur" 
       } as any, 
-      _sum: { amount: true } 
+      _sum: { amountTRY: true } 
     }),
     prisma.yachtRental.count({ where: whereTenant as any }),
     prisma.transaction.aggregate({ 
       where: { 
         ...whereTenant, 
-        type: "income", 
+        type: "income",
+        status: "completed",
         category: "vip_yat" 
       } as any, 
-      _sum: { amount: true } 
+      _sum: { amountTRY: true } 
     }),
     prisma.cruiseBooking.count({ where: whereTenant as any }),
     prisma.transaction.aggregate({ 
       where: { 
         ...whereTenant, 
-        type: "income", 
+        type: "income",
+        status: "completed",
         category: "cruise" 
       } as any, 
-      _sum: { amount: true } 
+      _sum: { amountTRY: true } 
     }),
     prisma.propertyRental.count({ where: whereTenant as any }),
     prisma.propertySale.count({ where: whereTenant as any }),
     prisma.transaction.aggregate({ 
       where: { 
         ...whereTenant, 
-        type: "income", 
+        type: "income",
+        status: "completed",
         category: "emlak" 
       } as any, 
-      _sum: { amount: true } 
+      _sum: { amountTRY: true } 
+    }),
+    prisma.transaction.aggregate({ 
+      where: { 
+        ...whereTenant, 
+        type: "income",
+        status: "completed",
+        category: "otel" 
+      } as any, 
+      _sum: { amountTRY: true } 
     }),
   ]);
 
@@ -95,59 +110,65 @@ export default async function ReportsPage() {
         prisma.transaction.aggregate({ 
           where: { 
             ...whereDay, 
-            type: "income", 
+            type: "income",
+            status: "completed",
             category: "arac" 
           } as any, 
-          _sum: { amount: true } 
+          _sum: { amountTRY: true } 
         }),
         prisma.transferBooking.count({ where: whereDay }),
         prisma.transaction.aggregate({ 
           where: { 
             ...whereDay, 
-            type: "income", 
+            type: "income",
+            status: "completed",
             category: "transfer" 
           } as any, 
-          _sum: { amount: true } 
+          _sum: { amountTRY: true } 
         }),
         prisma.tourBooking.count({ where: whereDay }),
         prisma.transaction.aggregate({ 
           where: { 
             ...whereDay, 
-            type: "income", 
+            type: "income",
+            status: "completed",
             category: "tur" 
           } as any, 
-          _sum: { amount: true } 
+          _sum: { amountTRY: true } 
         }),
         prisma.yachtRental.count({ where: whereDay }),
         prisma.transaction.aggregate({ 
           where: { 
             ...whereDay, 
-            type: "income", 
+            type: "income",
+            status: "completed",
             category: "vip_yat" 
           } as any, 
-          _sum: { amount: true } 
+          _sum: { amountTRY: true } 
         }),
         prisma.cruiseBooking.count({ where: whereDay }),
         prisma.transaction.aggregate({ 
           where: { 
             ...whereDay, 
-            type: "income", 
+            type: "income",
+            status: "completed",
             category: "cruise" 
           } as any, 
-          _sum: { amount: true } 
+          _sum: { amountTRY: true } 
         }),
         prisma.propertyRental.count({ where: whereDay }),
         prisma.propertySale.count({ where: whereDay }),
         prisma.transaction.aggregate({ 
           where: { 
             ...whereDay, 
-            type: "income", 
+            type: "income",
+            status: "completed",
             category: "emlak" 
           } as any, 
-          _sum: { amount: true } 
+          _sum: { amountTRY: true } 
         }),
       ]);
-      return { p, o, c: c._sum.amount || 0, vr, vrRev: vrRev._sum.amount || 0, tb, tr: tr._sum.amount || 0, tbr, trr: trr._sum.amount || 0, yr, yrRev: yrRev._sum.amount || 0, cb, cr: cr._sum.amount || 0, pr, ps, er: er._sum.amount || 0 };
+      return { p, o, c: c._sum.amount || 0, vr, vrRev: vrRev._sum.amountTRY || 0, tb, tr: tr._sum.amountTRY || 0, tbr, trr: trr._sum.amountTRY || 0, yr, yrRev: yrRev._sum.amountTRY || 0, cb, cr: cr._sum.amountTRY || 0, pr, ps, er: er._sum.amountTRY || 0 };
     })
   );
 
@@ -173,7 +194,7 @@ export default async function ReportsPage() {
           <TrendSpark points={series.map((s) => s.vr)} />
         </div>
         <div className="rounded border p-4">
-          <div className="font-medium mb-1">🚗 Araç Geliri: ₺{(vehicleRentalRevenue._sum.amount || 0).toLocaleString("tr-TR")}</div>
+          <div className="font-medium mb-1">🚗 Araç Geliri: ₺{(vehicleRentalRevenue._sum.amountTRY || 0).toLocaleString("tr-TR")}</div>
           <TrendSpark points={series.map((s) => Math.max(1, Math.round(s.vrRev / 1000)))} />
           <div className="text-xs text-neutral-500 mt-1">(binlik ölçek)</div>
         </div>
@@ -182,7 +203,7 @@ export default async function ReportsPage() {
           <TrendSpark points={series.map((s) => s.tb)} />
         </div>
         <div className="rounded border p-4">
-          <div className="font-medium mb-1">🚐 Transfer Geliri: ₺{(transferRevenue._sum.amount || 0).toLocaleString("tr-TR")}</div>
+          <div className="font-medium mb-1">🚐 Transfer Geliri: ₺{(transferRevenue._sum.amountTRY || 0).toLocaleString("tr-TR")}</div>
           <TrendSpark points={series.map((s) => Math.max(1, Math.round(s.tr / 1000)))} />
           <div className="text-xs text-neutral-500 mt-1">(binlik ölçek)</div>
         </div>
@@ -191,7 +212,7 @@ export default async function ReportsPage() {
           <TrendSpark points={series.map((s) => s.tbr)} />
         </div>
         <div className="rounded border p-4">
-          <div className="font-medium mb-1">🏛️ Tur Geliri: ₺{(tourRevenue._sum.amount || 0).toLocaleString("tr-TR")}</div>
+          <div className="font-medium mb-1">🏛️ Tur Geliri: ₺{(tourRevenue._sum.amountTRY || 0).toLocaleString("tr-TR")}</div>
           <TrendSpark points={series.map((s) => Math.max(1, Math.round(s.trr / 1000)))} />
           <div className="text-xs text-neutral-500 mt-1">(binlik ölçek)</div>
         </div>
@@ -200,7 +221,7 @@ export default async function ReportsPage() {
           <TrendSpark points={series.map((s) => s.yr)} />
         </div>
         <div className="rounded border p-4">
-          <div className="font-medium mb-1">🛥️ Yat Geliri: ₺{(yachtRevenue._sum.amount || 0).toLocaleString("tr-TR")}</div>
+          <div className="font-medium mb-1">🛥️ Yat Geliri: ₺{(yachtRevenue._sum.amountTRY || 0).toLocaleString("tr-TR")}</div>
           <TrendSpark points={series.map((s) => Math.max(1, Math.round(s.yrRev / 1000)))} />
           <div className="text-xs text-neutral-500 mt-1">(binlik ölçek)</div>
         </div>
@@ -209,7 +230,7 @@ export default async function ReportsPage() {
           <TrendSpark points={series.map((s) => s.cb)} />
         </div>
         <div className="rounded border p-4">
-          <div className="font-medium mb-1">🚢 Cruise Geliri: ₺{(cruiseRevenue._sum.amount || 0).toLocaleString("tr-TR")}</div>
+          <div className="font-medium mb-1">🚢 Cruise Geliri: ₺{(cruiseRevenue._sum.amountTRY || 0).toLocaleString("tr-TR")}</div>
           <TrendSpark points={series.map((s) => Math.max(1, Math.round(s.cr / 1000)))} />
           <div className="text-xs text-neutral-500 mt-1">(binlik ölçek)</div>
         </div>
@@ -222,9 +243,14 @@ export default async function ReportsPage() {
           <TrendSpark points={series.map((s) => s.ps)} />
         </div>
         <div className="rounded border p-4">
-          <div className="font-medium mb-1">🏠 Emlak Geliri: ₺{(emlakRevenue._sum.amount || 0).toLocaleString("tr-TR")}</div>
+          <div className="font-medium mb-1">🏠 Emlak Geliri: ₺{(emlakRevenue._sum.amountTRY || 0).toLocaleString("tr-TR")}</div>
           <TrendSpark points={series.map((s) => Math.max(1, Math.round(s.er / 1000)))} />
           <div className="text-xs text-neutral-500 mt-1">(binlik ölçek)</div>
+        </div>
+
+        <div className="rounded border p-4">
+          <div className="font-medium mb-1">🏨 Otel Geliri: ₺{(hotelRevenue._sum.amountTRY || 0).toLocaleString("tr-TR")}</div>
+          <div className="text-xs text-neutral-500 mt-1">(amountTRY)</div>
         </div>
       </div>
     </div>

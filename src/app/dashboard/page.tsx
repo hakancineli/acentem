@@ -19,16 +19,17 @@ export default async function DashboardPage() {
 
   const whereTenant = tenantId ? { tenantId } : {};
 
-  const [policyCount, pendingOfferCount, collectionSum, vehicleRevenueAgg, transferRevenueAgg, tourRevenueAgg, yachtRevenueAgg, cruiseRevenueAgg, emlakRevenueAgg] = await Promise.all([
+  const [policyCount, pendingOfferCount, collectionSum, vehicleRevenueAgg, transferRevenueAgg, tourRevenueAgg, yachtRevenueAgg, cruiseRevenueAgg, emlakRevenueAgg, hotelRevenueAgg] = await Promise.all([
     prisma.policy.count({ where: whereTenant as any }),
     prisma.offer.count({ where: { ...(whereTenant as any), status: "Beklemede" } }),
     prisma.collection.aggregate({ where: whereTenant as any, _sum: { amount: true } }),
-    prisma.transaction.aggregate({ where: { ...(whereTenant as any), type: "income", category: "arac" }, _sum: { amount: true } }),
-    prisma.transaction.aggregate({ where: { ...(whereTenant as any), type: "income", category: "transfer" }, _sum: { amount: true } }),
-    prisma.transaction.aggregate({ where: { ...(whereTenant as any), type: "income", category: "tur" }, _sum: { amount: true } }),
-    prisma.transaction.aggregate({ where: { ...(whereTenant as any), type: "income", category: "vip_yat" }, _sum: { amount: true } }),
-    prisma.transaction.aggregate({ where: { ...(whereTenant as any), type: "income", category: "cruise" }, _sum: { amount: true } }),
-    prisma.transaction.aggregate({ where: { ...(whereTenant as any), type: "income", category: "emlak" }, _sum: { amount: true } }),
+    prisma.transaction.aggregate({ where: { ...(whereTenant as any), type: "income", status: "completed", category: "arac" }, _sum: { amountTRY: true } }),
+    prisma.transaction.aggregate({ where: { ...(whereTenant as any), type: "income", status: "completed", category: "transfer" }, _sum: { amountTRY: true } }),
+    prisma.transaction.aggregate({ where: { ...(whereTenant as any), type: "income", status: "completed", category: "tur" }, _sum: { amountTRY: true } }),
+    prisma.transaction.aggregate({ where: { ...(whereTenant as any), type: "income", status: "completed", category: "vip_yat" }, _sum: { amountTRY: true } }),
+    prisma.transaction.aggregate({ where: { ...(whereTenant as any), type: "income", status: "completed", category: "cruise" }, _sum: { amountTRY: true } }),
+    prisma.transaction.aggregate({ where: { ...(whereTenant as any), type: "income", status: "completed", category: "emlak" }, _sum: { amountTRY: true } }),
+    prisma.transaction.aggregate({ where: { ...(whereTenant as any), type: "income", status: "completed", category: "otel" }, _sum: { amountTRY: true } }),
   ]);
 
   const totalCollections = collectionSum._sum.amount || 0;
@@ -44,14 +45,17 @@ export default async function DashboardPage() {
         <KpiCard title="Bekleyen Teklif" value={String(pendingOfferCount)} hint="durum: Beklemede" trend="flat" />
         <KpiCard title="Toplam Tahsilat" value={`₺${totalCollections.toLocaleString("tr-TR")}`} hint="toplam" trend="flat" />
         <KpiCard title="Aktif Tenant" value={tenantName} hint={tenantId ? tenantId.slice(0, 6) + "…" : "—"} trend="flat" />
-        <KpiCard title="Araç Geliri" value={`₺${(vehicleRevenueAgg._sum.amount || 0).toLocaleString("tr-TR")}`} hint="voucher gelirleri" trend="up" />
+        <KpiCard title="Araç Geliri" value={`₺${(vehicleRevenueAgg._sum.amountTRY || 0).toLocaleString("tr-TR")}`} hint="voucher gelirleri" trend="up" />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
-        <KpiCard title="Transfer Geliri" value={`₺${(transferRevenueAgg._sum.amount || 0).toLocaleString("tr-TR")}`} hint="transfer gelirleri" trend="up" />
-        <KpiCard title="Tur Geliri" value={`₺${(tourRevenueAgg._sum.amount || 0).toLocaleString("tr-TR")}`} hint="tur gelirleri" trend="up" />
-        <KpiCard title="Vip Yat Geliri" value={`₺${(yachtRevenueAgg._sum.amount || 0).toLocaleString("tr-TR")}`} hint="yat gelirleri" trend="up" />
-        <KpiCard title="Cruise Geliri" value={`₺${(cruiseRevenueAgg._sum.amount || 0).toLocaleString("tr-TR")}`} hint="cruise gelirleri" trend="up" />
-        <KpiCard title="Emlak Geliri" value={`₺${(emlakRevenueAgg._sum.amount || 0).toLocaleString("tr-TR")}`} hint="emlak gelirleri" trend="up" />
+        <KpiCard title="Transfer Geliri" value={`₺${(transferRevenueAgg._sum.amountTRY || 0).toLocaleString("tr-TR")}`} hint="transfer gelirleri" trend="up" />
+        <KpiCard title="Tur Geliri" value={`₺${(tourRevenueAgg._sum.amountTRY || 0).toLocaleString("tr-TR")}`} hint="tur gelirleri" trend="up" />
+        <KpiCard title="Vip Yat Geliri" value={`₺${(yachtRevenueAgg._sum.amountTRY || 0).toLocaleString("tr-TR")}`} hint="yat gelirleri" trend="up" />
+        <KpiCard title="Cruise Geliri" value={`₺${(cruiseRevenueAgg._sum.amountTRY || 0).toLocaleString("tr-TR")}`} hint="cruise gelirleri" trend="up" />
+        <KpiCard title="Emlak Geliri" value={`₺${(emlakRevenueAgg._sum.amountTRY || 0).toLocaleString("tr-TR")}`} hint="emlak gelirleri" trend="up" />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+        <KpiCard title="Otel Geliri" value={`₺${(hotelRevenueAgg._sum.amountTRY || 0).toLocaleString("tr-TR")}`} hint="otel gelirleri" trend="up" />
       </div>
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <div className="xl:col-span-2 rounded border p-4">
